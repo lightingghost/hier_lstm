@@ -145,7 +145,7 @@ def document_lstm(indata, num_lstm_layer, seq_len, input_size,
     return last_states[-1]
 
 def hier_lstm(indata, level1_para, level2_para, num_sent=3):
-    para = mx.sym.SliceChannel(data=indata, num_outputs=nem_sent)
+    para = mx.sym.SliceChannel(data=indata, num_outputs=num_sent)
     sentence_vecs = [] 
        for sentence in para:
         vec = sentence_lstm(sentence, level1_para.num_lstm_layer, level1_para.seq_len, 

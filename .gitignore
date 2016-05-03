@@ -1,0 +1,10 @@
+obama.txt
+lstm.py
+char-rnn.py
+data/*.npy
+data/sample*
+data/w*
+data/i*
+.idea
+__pycache__
+
