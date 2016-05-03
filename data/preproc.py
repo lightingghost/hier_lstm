@@ -67,7 +67,7 @@ def analyse(fin, num=sys.maxsize):
             break
     return nparas, nsents
     
-def build_vocab(fin, num=sys.maxsize, drop_off=5):
+def build_vocab(fin, num=sys.maxsize, drop_off=50):
     import itertools
     i = 1
     word_count = defaultdict(int)
@@ -92,9 +92,10 @@ def build_vocab(fin, num=sys.maxsize, drop_off=5):
     word2idx = dict()
     idx = 1
     for k, v in title_count.items():
-        word2idx[k] = idx
-        idx2word[idx] = k
-        idx += 1
+        if v > 10:
+            word2idx[k] = idx
+            idx2word[idx] = k
+            idx += 1
     for k, v in word_count.items():
         if v > drop_off and not k in word2idx:
             word2idx[k] = idx
@@ -118,7 +119,7 @@ def get_hist(data, figure, title, num_bins=10):
     plt.title(title)
     plt.show()
     
-def trans_word2idx(fin, fout):
+def trans_word2idx(fin, fout, drop_off=0.2):
     vocab_file = open('word2idx','rb')
     vocab = pickle.load(vocab_file)
     vocab = defaultdict(int, vocab)
@@ -127,12 +128,19 @@ def trans_word2idx(fin, fout):
         title = article['title']
         content = article['content']
         title_trans = [vocab[word] for word in nltk.word_tokenize(title)]
+        if float(title_trans.count(0) / len(title_trans)) > drop_off:
+            continue
         title_trans.append(-1)
         content_trans = []
+        add = True
         for sent in content:
             sent_trans = [vocab[word] for word in nltk.word_tokenize(sent)]
+            if float(sent_trans.count(0) / len(sent_trans)) > drop_off:
+                add = False
             sent_trans.append(-1)
             content_trans.append(sent_trans)
+        if not add:
+            continue
         enc = json.dumps({'title': title_trans, 'content': content_trans})
         fout.write(enc + '\n')
         
@@ -205,16 +213,15 @@ def trans2npy(fin, max_sent_len=100, max_title_len=30):
                 
 
 if __name__ == '__main__':
-    fin = open('sample_short_trans', 'r')
-    fout = open('sample_short_trans_new', 'w')
+    fin = open('sample_short', 'r')
+    fout = open('sample_short_trans', 'w')
     # short_version(fin, fout)
     # build_vocab(fin)
-    # import pdb; pdb.set_trace()
     # get_hist(nparas, 1, 'Number of Paragraphs', 20)
     # get_hist(nsents, 2, 'Number of Sentences', 20)
-    # trans_word2idx(fin, fout)
+    trans_word2idx(fin, fout, 0.15)
     # trans_idx2word(fin, fout)
     # add_sent_term(fin, fout)
-    trans2npy(fin)
+    # trans2npy(fin)
     fin.close()
     fout.close()

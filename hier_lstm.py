@@ -86,7 +86,7 @@ def sentence_lstm(indata, num_lstm_layer, seq_len, input_size,
     return last_states[-1]
     
 def document_lstm(indata, num_lstm_layer, seq_len, input_size,
-                num_hidden, num_embed, num_label, dropout=0.)
+                num_hidden, num_embed, num_label, dropout=0.):
                 
     param_cells = []
     last_states = []
@@ -165,7 +165,7 @@ def lstm_decoder(in_lstm_state, num_lstm_layer, input_size,
     embed_weight=mx.sym.Variable("embed_weight")
 
     param_cells = []
-    last_states = [in_lstm_state]
+    last_states = [in_lstm_state] * num_lstm_layer
     for i in range(num_lstm_layer):
         param_cells.append(LSTMParam(i2h_weight = mx.sym.Variable("dec_l%d_i2h_weight" % i),
                                       i2h_bias = mx.sym.Variable("dec_l%d_i2h_bias" % i),
@@ -174,7 +174,7 @@ def lstm_decoder(in_lstm_state, num_lstm_layer, input_size,
 
     hidden_all = []
     hidden = in_lstm_state.h
-    outputs =[]
+
     for seqidx in range(seq_len):
         # stack LSTM
         for i in range(num_lstm_layer):
@@ -192,20 +192,16 @@ def lstm_decoder(in_lstm_state, num_lstm_layer, input_size,
         if dropout > 0.:
             hidden = mx.sym.Dropout(data=hidden, p=dropout)
         hidden_all.append(hidden)
-        fc = mx.sym.FullyConnected(data=hidden, num_hidden=num_label,
-                               weight=cls_weight, bias=cls_bias, name='pred')
-        sm = mx.sym.SoftmaxOutput(data=fc, name='softmax')
-        outputs.append(sm)
-    return outputs
+
+                               
+    hidden_concat = mx.sym.Concat(*hidden_all, dim=0)
+    pred = mx.sym.FullyConnected(data=hidden_concat, num_hidden=num_label,
+                                 weight=cls_weight, bias=cls_bias, name='pred')
+
+    return pred
     
 def seq_cross_entropy(label, pred):
-    cls_weight = mx.sym.Variable("cls_weight")
-    cls_bias = mx.sym.Variable("cls_bias")
-    
-    pred = mx.sym.Concat(*pred, dim=0)
-    pred = mx.sym.FullyConnected(data=pred, num_hidden=num_label,
-                                 weight=cls_weight, bias=cls_bias, name='pred')
-    label = mx.sym.Variable('label')
+
     label = mx.sym.transpose(data=label)
     label = mx.sym.Reshape(data=label, target_shape=(0,))
     sm = mx.sym.SoftmaxOutput(data=pred, label=label, name='softmax')

@@ -5,6 +5,7 @@ data/*.npy
 data/sample*
 data/w*
 data/i*
+data/data/*
 .idea
 __pycache__
 
