@@ -33,7 +33,9 @@ data_iter = mx.io.NDArrayIter(data              = data,
                               label             = label, 
                               batch_size        = _batch_size, 
                               last_batch_handle = 'discard')
-embed_path = os.path.join()
+embed_path = os.path.join(data, 'embed.npy')
+embed_weight = np.load(embed_path)
+embed_weight = mx.nd.array(embed_weight)
 
 #model
 
@@ -80,7 +82,7 @@ group2ctx = {'embed'      : mx.cpu(0),
              'sent_layers': mx.gpu(),
              'doc_layers' : mx.gpu(),
              'dec_layers' : mx.gpu(),
-             'loss'       : mx.cpu(2)}
+             'loss'       : mx.gpu()}
 model = mx.model.FeedForward(ctx         = _devs,
                              symbol      = sym,
                              num_epoch   = _num_epoch,
