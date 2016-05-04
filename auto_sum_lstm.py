@@ -9,7 +9,7 @@ _test           = True
 _num_lstm_layer = 1
 _input_size     = _dict_len + 2
 _num_hidden     = 256,
-_num_embed      = 512,
+_num_embed      = 300,
 _num_label      = _dict_len + 2,
 _dropout        = 0.75
 #opt para
@@ -26,13 +26,14 @@ if test:
 else:
     name = 'training'
 data_path = os.path.join(data, name + '_data.npy')
-label_path = os.path.join(label, name + '_label.npy')
+label_path = os.path.join(data, name + '_label.npy')
 data = np.load(data_path)
 label = np.load(label_path)
 data_iter = mx.io.NDArrayIter(data              = data, 
                               label             = label, 
                               batch_size        = _batch_size, 
                               last_batch_handle = 'discard')
+embed_path = os.path.join()
 
 #model
 
@@ -69,8 +70,11 @@ def Perplexity(label, pred):
         loss += -np.log(max(1e-10, pred[i][int(label[i])]))
     return np.exp(loss / label.size)
     
-opt = mxnet.optimizer.Adam(learning_rate=_learning_rate)
-init =
+opt = mx.optimizer.Adam(learning_rate=_learning_rate)
+
+pre_trained = {'embed_weight': embed_weight}
+init = mx.initializer.Load(pre_trained,
+                           default_init=mx.initializer.Xavier())
 group2ctx = {'embed'      : mx.cpu(0),
              'preproc'    : mx.cpu(1),
              'sent_layers': mx.gpu(),

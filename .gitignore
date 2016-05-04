@@ -6,6 +6,7 @@ data/sample*
 data/w*
 data/i*
 data/data/*
+data/glove/*
 .idea
 __pycache__
 
