@@ -19,7 +19,6 @@ _devs           = [mx.gpu()]
 _batch_size     = 128
 _num_epoch      = 20
 
-
 #data
 
 if test:
