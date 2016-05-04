@@ -210,18 +210,37 @@ def trans2npy(fin, max_sent_len=100, max_title_len=30):
     
     np.save('data.npy', data1)
     np.save('label.npy', label1)
-                
-
+    
+def sep_data(data_filename, label_filename, seed=1234, val_ratio=0.15, test_ratio=0.15):
+    data = np.load(data_filename)
+    label = np.load(label_filename)
+    group = ['training', 'val', 'test']
+    nsamples = label.shape[0]
+    nvals = int(nsamples * val_ratio)
+    ntests = int(nsamples * test_ratio)
+    np.random.seed(seed)
+    seq = np.random.permutation(nsamples)
+    val_idx = seq[ : nvals]
+    test_idx = seq[nvals : nvals + ntests]
+    training_idx = seq[nvals + ntests :]
+    idxs = [training_idx, val_idx, test_idx]
+    for i in range(3):
+        data_name = group[i] + '_data.npy'
+        label_name = group[i] + '_label.npy'
+        np.save(data_name, data[idxs[i]])
+        np.save(label_name, label[idxs[i]])
+        
 if __name__ == '__main__':
-    fin = open('sample_short', 'r')
-    fout = open('sample_short_trans', 'w')
+    # fin = open('sample_short_trans', 'r')
+    # fout = open('sample_short_trans', 'w')
     # short_version(fin, fout)
     # build_vocab(fin)
     # get_hist(nparas, 1, 'Number of Paragraphs', 20)
     # get_hist(nsents, 2, 'Number of Sentences', 20)
-    trans_word2idx(fin, fout, 0.15)
+    # trans_word2idx(fin, fout, 0.15)
     # trans_idx2word(fin, fout)
     # add_sent_term(fin, fout)
     # trans2npy(fin)
-    fin.close()
-    fout.close()
+    sep_data('data.npy', 'label.npy')
+    # fin.close()
+    # fout.close()
