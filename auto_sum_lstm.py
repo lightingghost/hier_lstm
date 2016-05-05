@@ -2,13 +2,19 @@ import mxnet as mx
 import os
 import numpy as np
 from hier_lstm import HyperPara, hier_lstm_model, get_input_shapes
+#setup logging
+from imp import reload
+import logging
+reload(logging)
+logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', 
+                    level=logging.DEBUG, datefmt='%I:%M:%S')
 
 #model para
 _dict_len       = 55496
 _test           = True
 _num_lstm_layer = 1
 _input_size     = _dict_len + 2
-_num_hidden     = 256
+_num_hidden     = 512
 _num_embed      = 300
 _num_label      = _dict_len + 2
 _dropout        = 0.75
@@ -65,13 +71,13 @@ data_name = 'data'
 label_name = 'softmax_label'
 sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
 
-print('Model set up.')
+print('Model set up complete.')
 
 
 #data iter
 input_dict = {'data': data}
 for state, shape in get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size).items():
-    input_dict[state] = mx.nd.zeros((_nsamples, _num_hidden))
+    input_dict[state] = mx.nd.zeros((_batch_size * 10, _num_hidden))
     
 data_iter = mx.io.NDArrayIter(data              = input_dict, 
                               label             = label, 
@@ -102,7 +108,8 @@ model = mx.model.FeedForward(ctx         = _devs,
                              optimizer   = opt,
                              initializer = init)
 checkpoint_path = os.path.join('checkpoint', 'auto_sum')
+
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 50),
+          batch_end_callback = mx.callback.Speedometer(_batch_size, 2),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
