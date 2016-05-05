@@ -40,34 +40,17 @@ def lstm(num_hidden, indata, prev_state, param, seqidx, layeridx, dropout=0.):
     return LSTMState(c=next_c, h=next_h)
     
 
-def sentence_lstm(indata, num_lstm_layer, seq_len, input_size,
-                num_hidden, num_embed, num_label, dropout=0.):
-    #indata: list of indexs of the words.
-    with mx.AttrScope(ctx_group='embed'):
-        embed_weight = mx.sym.Variable("embed_weight")
-
+def sentence_lstm(indata, sent_idx, param_cells, num_lstm_layer, seq_len, num_hidden, dropout=0.):
     #multilayer lstm
-    param_cells = []
     last_states = []
     for i in range(num_lstm_layer):
         with mx.AttrScope(ctx_group='sent_layers'):
-            param_cells.append(LSTMParam(i2h_weight=mx.sym.Variable("sent_l%d_i2h_weight" % i),
-                                        i2h_bias=mx.sym.Variable("sent_l%d_i2h_bias" % i),
-                                        h2h_weight=mx.sym.Variable("sent_l%d_h2h_weight" % i),
-                                        h2h_bias=mx.sym.Variable("sent_l%d_h2h_bias" % i)))
-            state = LSTMState(c=mx.sym.Variable("sent_l%d_init_c" % i),
-                            h=mx.sym.Variable("sent_l%d_init_h" % i))
+            state = LSTMState(c=mx.sym.Variable("sent%d_l%d_init_c" % (sent_idx, i)),
+                            h=mx.sym.Variable("sent%d_l%d_init_h" % (sent_idx, i)))
         last_states.append(state)
-    assert(len(last_states) == num_lstm_layer)
-
-    # embeding layer
-    with mx.AttrScope(ctx_group='embed'):
-        embed = mx.sym.Embedding(data=indata, input_dim=input_size,
-                                weight=embed_weight, output_dim=num_embed, name='embed')
-        wordvec = mx.sym.SliceChannel(data=embed, num_outputs=seq_len, squeeze_axis=1)
-
+        
     for seqidx in range(seq_len):
-        hidden = wordvec[seqidx]
+        hidden = indata[seqidx]
         # stack LSTM
         for i in range(num_lstm_layer):
             if i == 0:
@@ -87,8 +70,7 @@ def sentence_lstm(indata, num_lstm_layer, seq_len, input_size,
 
     return last_states[-1]
     
-def document_lstm(indata, num_lstm_layer, seq_len, input_size,
-                num_hidden, num_embed, num_label, dropout=0.):
+def document_lstm(indata, num_lstm_layer, seq_len, num_hidden, dropout=0.):
                 
     param_cells = []
     last_states = []
@@ -129,22 +111,39 @@ def document_lstm(indata, num_lstm_layer, seq_len, input_size,
 def hier_lstm(indata, level1_para, level2_para):
     with mx.AttrScope(ctx_group='preproc'):
         para = mx.sym.SliceChannel(data=indata, num_outputs=level2_para.seq_len)
+        
+    with mx.AttrScope(ctx_group='embed'):
+        embed_weight = mx.sym.Variable("embed_weight")
+    #sent_level
+    param_cells = []
+    for i in range(level1_para.num_lstm_layer):
+        with mx.AttrScope(ctx_group='sent_layers'):
+            param_cells.append(LSTMParam(i2h_weight=mx.sym.Variable("sent_l%d_i2h_weight" % i),
+                                        i2h_bias=mx.sym.Variable("sent_l%d_i2h_bias" % i),
+                                        h2h_weight=mx.sym.Variable("sent_l%d_h2h_weight" % i),
+                                        h2h_bias=mx.sym.Variable("sent_l%d_h2h_bias" % i)))
+                                        
     sentence_vecs = []
     for i in range(level2_para.seq_len):
-        vec = sentence_lstm(para[i], level1_para.num_lstm_layer, level1_para.seq_len, 
-                          level1_para.input_size, level1_para.num_hidden, level1_para.num_embed, 
-                          level1_para.num_label, level1_para.dropout)
+        # embeding layer
+        with mx.AttrScope(ctx_group='embed'):
+            embed = mx.sym.Embedding(data=para[i], input_dim=level1_para.input_size,
+                                    weight=embed_weight, output_dim=level1_para.num_embed, 
+                                    name='embed')
+            wordvec = mx.sym.SliceChannel(data=embed, num_outputs=level1_para.seq_len, 
+                                        squeeze_axis=1)
         
+        vec = sentence_lstm(wordvec, i, param_cells, level1_para.num_lstm_layer, 
+                            level1_para.seq_len, level1_para.num_hidden, level1_para.dropout)
         sentence_vecs.append(vec.h)
     
+    #doc level
     final_state = document_lstm(sentence_vecs, level2_para.num_lstm_layer, level2_para.seq_len, 
-                          level2_para.input_size, level2_para.num_hidden, level2_para.num_embed, 
-                          level2_para.num_label, level2_para.dropout)
+                                level2_para.num_hidden, level2_para.dropout)
     return final_state
     
 
-def lstm_decoder(in_lstm_state, num_lstm_layer, seq_len, input_size,
-                 num_hidden, num_embed, num_label, dropout=0.):
+def lstm_decoder(in_lstm_state, num_lstm_layer, seq_len, num_hidden, num_label, dropout=0.):
                  
     # with mx.AttrScope(ctx_group='embed'):
     #     embed_weight=mx.sym.Variable("embed_weight")
@@ -204,13 +203,27 @@ def hier_lstm_model(data_name, label_name,
     label = mx.sym.Variable(label_name)
     doc_state = hier_lstm(data, sent_enc_para, doc_enc_para)
     pred = lstm_decoder(doc_state, dec_para.num_lstm_layer, dec_para.seq_len,
-                        dec_para.input_size, dec_para.num_hidden, dec_para.num_embed, 
-                        dec_para.num_label, dec_para.dropout)
+                        dec_para.num_hidden, dec_para.num_label, dec_para.dropout)
     loss = seq_cross_entropy(label, pred)
     return loss
-    
 
-
+def get_input_shapes(sent_enc_para, doc_enc_para, dec_para, batch_size):
+    # input_shapes = {}
+    # input_shapes['data'] = (batch_size, sent_enc_para.seq_len * 3)
+    # input_shapes['softmax_label'] = (batch_size, dec_para.seq_len)
+    init_state_shapes = {}
+    arg_shapes = {}
+    for i in range(doc_enc_para.seq_len):
+        for j in range(sent_enc_para.num_lstm_layer):
+            init_state_shapes['sent{}_l{}_init_h'.format(i, j)] = (batch_size, sent_enc_para.num_hidden)        
+            init_state_shapes['sent{}_l{}_init_c'.format(i, j)] = (batch_size, sent_enc_para.num_hidden)
+    for i in range(doc_enc_para.num_lstm_layer):
+        init_state_shapes['doc_l{}_init_h'.format(i)] = (batch_size, doc_enc_para.num_hidden)
+        init_state_shapes['doc_l{}_init_c'.format(i)] = (batch_size, doc_enc_para.num_hidden) 
+    for i in range(dec_para.num_lstm_layer):
+        init_state_shapes['dec_l{}_init_h'.format(i)] = (batch_size, dec_para.num_hidden)
+        init_state_shapes['dec_l{}_init_c'.format(i)] = (batch_size, dec_para.num_hidden)   
+    return init_state_shapes
 
 
 

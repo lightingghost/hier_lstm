@@ -1,7 +1,7 @@
 import mxnet as mx
 import os
 import numpy as np
-from hier_lstm import HyperPara, hier_lstm_model
+from hier_lstm import HyperPara, hier_lstm_model, get_input_shapes
 
 #model para
 _dict_len       = 55496
@@ -16,7 +16,7 @@ _dropout        = 0.75
 _learning_rate  = 0.002
 #training para
 _devs           = [mx.gpu()]
-_batch_size     = 128
+_batch_size     = 32
 _num_epoch      = 20
 
 #data
@@ -29,10 +29,8 @@ data_path = os.path.join('data', name + '_data.npy')
 label_path = os.path.join('data', name + '_label.npy')
 data = np.load(data_path)
 label = np.load(label_path)
-data_iter = mx.io.NDArrayIter(data              = data, 
-                              label             = label, 
-                              batch_size        = _batch_size, 
-                              last_batch_handle = 'discard')
+_nsamples = label.shape[0]
+
 embed_path = os.path.join('data', 'embed.npy')
 embed_weight = np.load(embed_path)
 embed_weight = mx.nd.array(embed_weight)
@@ -64,11 +62,21 @@ dec_para      = HyperPara(num_lstm_layer = _num_lstm_layer,
 
 
 data_name = 'data'
-label_name = 'label'
+label_name = 'softmax_label'
 sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
 
 print('Model set up.')
 
+
+#data iter
+input_dict = {'data': data}
+for state, shape in get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size).items():
+    input_dict[state] = mx.nd.zeros((_nsamples, _num_hidden))
+    
+data_iter = mx.io.NDArrayIter(data              = input_dict, 
+                              label             = label, 
+                              batch_size        = _batch_size, 
+                              last_batch_handle = 'discard')
 #train
 def Perplexity(label, pred):
     label = label.T.reshape((-1,))
@@ -96,5 +104,5 @@ model = mx.model.FeedForward(ctx         = _devs,
 checkpoint_path = os.path.join('checkpoint', 'auto_sum')
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size),
+          batch_end_callback = mx.callback.Speedometer(_batch_size, 50),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
