@@ -128,12 +128,13 @@ def document_lstm(indata, num_lstm_layer, seq_len, input_size,
 
 def hier_lstm(indata, level1_para, level2_para):
     with mx.AttrScope(ctx_group='preproc'):
-        para = mx.sym.SliceChannel(data=indata, num_outputs=lavel2_para.seq_len)
-    sentence_vecs = [] 
-    for sentence in para:
-        vec = sentence_lstm(sentence, level1_para.num_lstm_layer, level1_para.seq_len, 
+        para = mx.sym.SliceChannel(data=indata, num_outputs=level2_para.seq_len)
+    sentence_vecs = []
+    for i in range(level2_para.seq_len):
+        vec = sentence_lstm(para[i], level1_para.num_lstm_layer, level1_para.seq_len, 
                           level1_para.input_size, level1_para.num_hidden, level1_para.num_embed, 
                           level1_para.num_label, level1_para.dropout)
+        
         sentence_vecs.append(vec.h)
     
     final_state = document_lstm(sentence_vecs, level2_para.num_lstm_layer, level2_para.seq_len, 
@@ -145,8 +146,8 @@ def hier_lstm(indata, level1_para, level2_para):
 def lstm_decoder(in_lstm_state, num_lstm_layer, seq_len, input_size,
                  num_hidden, num_embed, num_label, dropout=0.):
                  
-    with mx.AttrScope(ctx_group='embed'):
-        embed_weight=mx.sym.Variable("embed_weight")
+    # with mx.AttrScope(ctx_group='embed'):
+    #     embed_weight=mx.sym.Variable("embed_weight")
     with mx.AttrScope(ctx_group='decode'):
         cls_weight = mx.sym.Variable("cls_weight")
         cls_bias = mx.sym.Variable("cls_bias")
@@ -195,7 +196,7 @@ def seq_cross_entropy(label, pred):
         label = mx.sym.transpose(data=label)
         label = mx.sym.Reshape(data=label, target_shape=(0,))
         sm = mx.sym.SoftmaxOutput(data=pred, label=label, name='softmax')
-     return sm
+    return sm
      
 def hier_lstm_model(data_name, label_name, 
                     sent_enc_para, doc_enc_para, dec_para):
