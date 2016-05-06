@@ -195,6 +195,7 @@ def seq_cross_entropy(label, pred):
         label = mx.sym.transpose(data=label)
         label = mx.sym.Reshape(data=label, target_shape=(0,))
         sm = mx.sym.SoftmaxOutput(data=pred, label=label, name='softmax')
+        #sm = mx.sym.softmax_cross_entropy(lhs=pred, rhs=label, name='softmax')
     return sm
      
 def hier_lstm_model(data_name, label_name, 

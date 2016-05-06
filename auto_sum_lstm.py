@@ -11,7 +11,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
 
 #model para
 _dict_len       = 55496
-_test           = True
+_test           = False
 _num_lstm_layer = 1
 _input_size     = _dict_len + 2
 _num_hidden     = 512
@@ -23,7 +23,7 @@ _learning_rate  = 0.002
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 32
-_num_epoch      = 20
+_num_epoch      = 2
 
 #data
 
@@ -77,12 +77,21 @@ print('Model set up complete.')
 #data iter
 input_dict = {'data': data}
 for state, shape in get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size).items():
-    input_dict[state] = mx.nd.zeros((_batch_size * 10, _num_hidden))
+    input_dict[state] = mx.nd.zeros((_nsamples, _num_hidden))
     
 data_iter = mx.io.NDArrayIter(data              = input_dict, 
                               label             = label, 
                               batch_size        = _batch_size, 
                               last_batch_handle = 'discard')
+
+val_dict = {'data': val_data}
+for state, shape in get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size).items():
+    val_dict[state] = mx.nd.zeros((_batch_size * 10, _num_hidden))
+val_data_iter = data_iter = mx.io.NDArrayIter(data              = val_dict, 
+                                              label             = val_label, 
+                                              batch_size        = _batch_size, 
+                                              last_batch_handle = 'discard')                             
+
 #train
 def Perplexity(label, pred):
     label = label.T.reshape((-1,))
@@ -90,6 +99,9 @@ def Perplexity(label, pred):
     for i in range(pred.shape[0]):
         loss += -np.log(max(1e-10, pred[i][int(label[i])]))
     return np.exp(loss / label.size)
+    
+# def Perplexity(label, pred):
+#     return np.exp(np.mean(pred))
     
 opt = mx.optimizer.Adam(learning_rate=_learning_rate)
 
@@ -111,5 +123,5 @@ checkpoint_path = os.path.join('checkpoint', 'auto_sum')
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 2),
+          batch_end_callback = mx.callback.Speedometer(_batch_size, 2000),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
