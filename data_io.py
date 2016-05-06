@@ -2,45 +2,13 @@ import sys
 import numpy as np
 import mxnet as mx
 
-def default_read_content(path, sent_len, title_len):
-    import json
-    data = []
-    label = []
-    with open(path) as ins:
-        for line in ins:
-            sample = json.loads(line)
-            title = sample['title']
-            content = sample['content']
-            add = True
-            if len(title) > title_len:
-                add = False
-            for sent in content:
-                if len(sent) > sent_len:
-                    add = False
-            if add:
-                data.append(content)
-                label.append(title)
-    return data, label
-
-def default_gen_bucket(data_batch, label_batch):
-    data_max_len = [0, 0, 0]
-    for data in data_batch:
-        for i in range(3):
-            max_len[i] = max(max_len[i], len(data[i]))
-    
-    label_max_len = 0
-    for label in label_batch:
-        max_label_len = max(label_max_len, len(label))
-        
-    return data_max_len, label_max_len
 
 class SimpleBatch(object):
-    def __init__(self, data_names, data, label_names, label, bucket_key):
+    def __init__(self, data_names, data, label_names, label):
         self.data = data
         self.label = label
         self.data_names = data_names
         self.label_names = label_names
-        self.bucket_key = bucket_key
 
         self.pad = 0
         self.index = None # TODO: what is index?
@@ -72,59 +40,56 @@ class DummyIter(mx.io.DataIter):
     def next(self):
         return self.the_batch
         
-class BucketSentenceIter(mx.io.DataIter):
-    def __init__(self, path, batch_size, init_states, 
-                 sent_len=100, n_sent=3, title_len=30, data_name='data', label_name='label'):
-        super(BucketSentenceIter, self).__init__()
+class array_iter_with_init_states(mx.io.DataIter):
+    def __init__(self, data, label, batch_size, init_states, 
+                 data_name='data', label_name='label', random=False):
+        super(array_iter_with_init_states, self).__init__()
 
-        data, label = default_read_content(path, sent_len, title_len)
         self.data = data
         self.label = label
         self.data_name = data_name
         self.label_name = label_name
-        self.sent_len = sent_len
-        self.n_sent = n_sent
-        self.title_len = title_len
+        self.data_shape = data.shape
+        self.label_shape = label.shape
         self.batch_size = batch_size
+        self.random = random
         
-        assert(len(data) == len(label))
-        self.nsamples = len(data)
+        assert(data.shape[0] == label.shape[0])
+        self.nsamples = data.shape[0]
         
         self.make_data_iter_plan()
 
         self.init_states = init_states
         self.init_state_arrays = [mx.nd.zeros(x[1]) for x in init_states]
 
-        self.provide_data = [('data', (self.batch_size, self.sent_len))] + init_states
-        self.provide_label = [('label', (self.batch_size, self.title_len))]
+        self.provide_data = [(data_name, (self.batch_size, self.data_shape[1]))] + init_states
+        self.provide_label = [(label_name, (self.batch_size, self.label_shape[1]))]
 
     def make_data_iter_plan(self):
         "make a random data iteration plan"
         # truncate each bucket into multiple of batch-size
-        data = np.zeros((self.nsamples, self.sent_len * self.n_sent), dtype=np.int32)
-        data.fill(-1)
-        label = np.zeros((self.nsamples, self.title_len), dtype=np.int32)
-        label.fill(-1)
-        for i in range(self.nsamples):
-            for j in range(self.n_sent):
-                sent_len = len(self.data[i][j])
-                start_idx = j * self.sent_len
-                data[i, start_idx : start_idx + sent_len] = self.data[i][j]
-            title_len = len(label[i])
-            label[i, :title_len] = self.label[i]
-        self.data = data
-        self.label = label
         n_batches = int(self.nsamples / self.batch_size)
         n_sum = n_batches * self.batch_size
-        self.batches = np.array_split(np.random.permutation(n_sum), n_batches)
+        if self.random:
+            gen_seq = np.random.permutation
+        else:
+            gen_seq = np.arange
+        self.batches = np.array_split(gen_seq(n_sum, dtype=np.int32), n_batches)
         self.curr_batch_idx = 0
         
 
     def __iter__(self):
         init_state_names = [x[0] for x in self.init_states]
-
         for batch_idxs in self.batches:
-            yield self.data[batch_idxs]
+            data = self.data[batch_idxs]
+            label = self.label[batch_idxs]
+            data_all = [mx.nd.array(data)] + self.init_state_arrays
+            label_all = [mx.nd.array(label)]
+            data_names = [self.data_name] + init_state_names
+            label_names = [self.label_name]
+            
+            data_batch = SimpleBatch(data_names, data_all, label_names, label_all)
+            yield data_batch
 
     def reset(self):
         self.curr_batch_idx = 0

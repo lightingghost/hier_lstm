@@ -2,6 +2,7 @@ import mxnet as mx
 import os
 import numpy as np
 from hier_lstm import HyperPara, hier_lstm_model, get_input_shapes
+from data_io import array_iter_with_init_states as array_iter
 #setup logging
 from imp import reload
 import logging
@@ -11,7 +12,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
 
 #model para
 _dict_len       = 55496
-_test           = False
+_test           = True
 _num_lstm_layer = 1
 _input_size     = _dict_len + 2
 _num_hidden     = 512
@@ -68,7 +69,7 @@ dec_para      = HyperPara(num_lstm_layer = _num_lstm_layer,
 
 
 data_name = 'data'
-label_name = 'softmax_label'
+label_name = 'label'
 sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
 
 print('Model set up complete.')
@@ -76,22 +77,19 @@ print('Model set up complete.')
 
 #data iter
 input_dict = {'data': data}
-for state, shape in get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size).items():
-    input_dict[state] = mx.nd.zeros((_nsamples, _num_hidden))
-    
-data_iter = mx.io.NDArrayIter(data              = input_dict, 
-                              label             = label, 
-                              batch_size        = _batch_size, 
-                              last_batch_handle = 'discard')
+init_dict = get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size)
 
-val_dict = {'data': val_data}
-for state, shape in get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size).items():
-    val_dict[state] = mx.nd.zeros((_batch_size * 10, _num_hidden))
-val_data_iter = data_iter = mx.io.NDArrayIter(data              = val_dict, 
-                                              label             = val_label, 
-                                              batch_size        = _batch_size, 
-                                              last_batch_handle = 'discard')                             
 
+# for state, shape in init_dict.items():
+#     input_dict[state] = mx.nd.zeros((_nsamples, _num_hidden))    
+# data_iter = mx.io.NDArrayIter(data              = input_dict, 
+#                               label             = label, 
+#                               batch_size        = _batch_size, 
+#                               last_batch_handle = 'discard')
+
+data_iter = array_iter(data, label, _batch_size, list(init_dict.items()),
+                       data_name='data', label_name='label', random=False)
+                          
 #train
 def Perplexity(label, pred):
     label = label.T.reshape((-1,))
