@@ -36,9 +36,6 @@ data = np.load(data_path)
 label = np.load(label_path)
 _nsamples = label.shape[0]
 
-# embed_path = os.path.join('data', 'embed.npy')
-# embed_weight = np.load(embed_path)
-# embed_weight = mx.nd.array(embed_weight)
 
 
 # #model
@@ -71,11 +68,7 @@ data_iter = array_iter(data, label, _batch_size, list(init_dict.items()),
                        data_name='data', label_name='label', random=False)
 
 print('Data loading complete.')
-# data_name = 'data'
-# label_name = 'label'
-# sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
 
-# print('Model set up complete.')
 
 begin_epoch = int(sys.argv[1])
 _devs = [mx.gpu()]
@@ -94,14 +87,11 @@ def Perplexity(label, pred):
         loss += -np.log(max(1e-10, pred[i][int(label[i])]))
     return np.exp(loss / label.size)
     
-# def Perplexity(label, pred):
-#     return np.exp(np.mean(pred))
+
     
 opt = mx.optimizer.Adam(learning_rate=_learning_rate)
 
-# pre_trained = {'embed_weight': embed_weight}
-# init = mx.initializer.Load(pre_trained,
-#                            default_init=mx.initializer.Xavier())
+
 
 model = mx.model.FeedForward(ctx         = _devs,
                              symbol      = pretrained_model.symbol,
