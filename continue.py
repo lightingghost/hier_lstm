@@ -1,5 +1,6 @@
 import mxnet as mx
 import os
+import sys
 import numpy as np
 from hier_lstm import HyperPara, hier_lstm_model, get_input_shapes
 from data_io import array_iter_with_init_states as array_iter
@@ -9,7 +10,7 @@ import logging
 reload(logging)
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', 
                     level=logging.DEBUG, datefmt='%I:%M:%S')
-
+                    
 #model para
 _dict_len       = 55496
 _test           = False
@@ -24,26 +25,23 @@ _learning_rate  = 0.002
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 32
-_num_epoch      = 1
+_num_epoch      = 2
 
 #data
 
-if _test:
-    name = 'test'
-else:
-    name = 'training'
+name = 'training'
 data_path = os.path.join('data', name + '_data.npy')
 label_path = os.path.join('data', name + '_label.npy')
 data = np.load(data_path)
 label = np.load(label_path)
 _nsamples = label.shape[0]
 
-embed_path = os.path.join('data', 'embed.npy')
-embed_weight = np.load(embed_path)
-embed_weight = mx.nd.array(embed_weight)
+# embed_path = os.path.join('data', 'embed.npy')
+# embed_weight = np.load(embed_path)
+# embed_weight = mx.nd.array(embed_weight)
 
-print('Data loading complete.')
-#model
+
+# #model
 
 sent_enc_para = HyperPara(num_lstm_layer = _num_lstm_layer,
                           seq_len        = 100,
@@ -67,30 +65,28 @@ dec_para      = HyperPara(num_lstm_layer = _num_lstm_layer,
                           num_label      = _num_label,
                           dropout        = _dropout)
 
-
-data_name = 'data'
-label_name = 'label'
-sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
-
-print('Model set up complete.')
-
-
-#data iter
-input_dict = {'data': data}
 init_dict = get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size)
-
-
-# for state, shape in init_dict.items():
-#     input_dict[state] = mx.nd.zeros((_nsamples, _num_hidden))    
-# data_iter = mx.io.NDArrayIter(data              = input_dict, 
-#                               label             = label, 
-#                               batch_size        = _batch_size, 
-#                               last_batch_handle = 'discard')
 
 data_iter = array_iter(data, label, _batch_size, list(init_dict.items()),
                        data_name='data', label_name='label', random=False)
-                          
-#train
+
+print('Data loading complete.')
+# data_name = 'data'
+# label_name = 'label'
+# sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
+
+# print('Model set up complete.')
+
+begin_epoch = int(sys.argv[1])
+_devs = [mx.gpu()]
+if sys.argv[2] == 'cpu':
+    _devs = [mx.cpu(i) for i in range(8)]
+if sys.argv[2] == 'gpu':
+    _devs = [mx.gpu()]    
+checkpoint_path = os.path.join('checkpoint', 'auto_sum')
+pretrained_model = mx.model.FeedForward.load(checkpoint_path, begin_epoch)
+
+
 def Perplexity(label, pred):
     label = label.T.reshape((-1,))
     loss = 0.
@@ -103,21 +99,19 @@ def Perplexity(label, pred):
     
 opt = mx.optimizer.Adam(learning_rate=_learning_rate)
 
-pre_trained = {'embed_weight': embed_weight}
-init = mx.initializer.Load(pre_trained,
-                           default_init=mx.initializer.Xavier())
-group2ctx = {'embed'      : mx.cpu(0),
-             'preproc'    : mx.cpu(1),
-             'sent_layers': mx.gpu(),
-             'doc_layers' : mx.gpu(),
-             'dec_layers' : mx.gpu(),
-             'loss'       : mx.gpu()}
+# pre_trained = {'embed_weight': embed_weight}
+# init = mx.initializer.Load(pre_trained,
+#                            default_init=mx.initializer.Xavier())
+
 model = mx.model.FeedForward(ctx         = _devs,
-                             symbol      = sym,
+                             symbol      = pretrained_model.symbol,
+                             arg_params  = pretrained_model.arg_params,
+                             aux_params  = pretrained_model.aux_params,
                              num_epoch   = _num_epoch,
-                             optimizer   = opt,
-                             initializer = init)
-checkpoint_path = os.path.join('checkpoint', 'auto_sum')
+                             begin_epoch = begin_epoch,
+                             optimizer   = opt)
+print('Previous model load complete.')
+
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
