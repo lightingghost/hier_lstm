@@ -87,6 +87,7 @@ init_dict = get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size)
 #                               batch_size        = _batch_size, 
 #                               last_batch_handle = 'discard')
 
+
 data_iter = array_iter(data, label, _batch_size, list(init_dict.items()),
                        data_name='data', label_name='label', random=False)
                           

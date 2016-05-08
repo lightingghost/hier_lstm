@@ -10,7 +10,8 @@ import logging
 reload(logging)
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', 
                     level=logging.DEBUG, datefmt='%I:%M:%S')
-                    
+
+         
 #model para
 _dict_len       = 55496
 _test           = False
@@ -24,12 +25,12 @@ _dropout        = 0.75
 _learning_rate  = 0.001
 #training para
 _devs           = [mx.gpu()]
-_batch_size     = 32
-_num_epoch      = 3
+_batch_size     = 1
+_num_epoch      = 4
 
 #data
 
-name = 'training'
+name = 'test'
 data_path = os.path.join('data', name + '_data.npy')
 label_path = os.path.join('data', name + '_label.npy')
 data = np.load(data_path)
@@ -61,49 +62,37 @@ dec_para      = HyperPara(num_lstm_layer = _num_lstm_layer,
                           num_embed      = _num_embed,
                           num_label      = _num_label,
                           dropout        = _dropout)
-
+sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
 init_dict = get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size)
 
-data_iter = array_iter(data, label, _batch_size, list(init_dict.items()),
-                       data_name='data', label_name='label', random=False)
+data_idx = 1
+data = data[1]
+label = label[1]
 
 print('Data loading complete.')
 
 
-begin_epoch = int(sys.argv[1])
+epoch = int(sys.argv[1])
 _devs = [mx.gpu()]
 if sys.argv[2] == 'cpu':
     _devs = [mx.cpu(i) for i in range(8)]
-if sys.argv[2] == 'gpu':
+else:
     _devs = [mx.gpu()]    
 checkpoint_path = os.path.join('checkpoint', 'auto_sum')
-pretrained_model = mx.model.FeedForward.load(checkpoint_path, begin_epoch)
+pretrained_model = mx.model.FeedForward.load(checkpoint_path, epoch)
 
-
-def Perplexity(label, pred):
-    label = label.T.reshape((-1,))
-    loss = 0.
-    for i in range(pred.shape[0]):
-        loss += -np.log(max(1e-10, pred[i][int(label[i])]))
-    return np.exp(loss / label.size)
-    
-
-    
-opt = mx.optimizer.Adam(learning_rate=_learning_rate)
-
-
-
-model = mx.model.FeedForward(ctx         = _devs,
-                             symbol      = pretrained_model.symbol,
-                             arg_params  = pretrained_model.arg_params,
-                             aux_params  = pretrained_model.aux_params,
-                             num_epoch   = _num_epoch,
-                             begin_epoch = begin_epoch,
-                             optimizer   = opt)
 print('Previous model load complete.')
 
+data_name = 'data'
+label_name = 'label'
+data_dict = copy(init_dict)
 
-model.fit(X                  = data_iter,
-          eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 2000),
-          epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
+init_dict[data_name] = (_batch_size, sent_enc_para.seq_len * 3)
+init_dict[label_name] = (_batch_size, dec_para.seq_len)
+
+model_exec = sym.simple_bind(ctx=_devs, **init_dict)
+for key in model_exec.arg_dict.keys():
+    if key in pretrained_model.arg_params:
+        pretrained_model.arg_params[key].copyto(model_exec.arg_dict[key])
+        
+

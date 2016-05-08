@@ -10,7 +10,8 @@ import logging
 reload(logging)
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', 
                     level=logging.DEBUG, datefmt='%I:%M:%S')
-                    
+
+         
 #model para
 _dict_len       = 55496
 _test           = False
@@ -25,11 +26,11 @@ _learning_rate  = 0.001
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 32
-_num_epoch      = 3
+_num_epoch      = 4
 
 #data
 
-name = 'training'
+name = 'val'
 data_path = os.path.join('data', name + '_data.npy')
 label_path = os.path.join('data', name + '_label.npy')
 data = np.load(data_path)
@@ -70,14 +71,14 @@ data_iter = array_iter(data, label, _batch_size, list(init_dict.items()),
 print('Data loading complete.')
 
 
-begin_epoch = int(sys.argv[1])
+epoch = int(sys.argv[1])
 _devs = [mx.gpu()]
 if sys.argv[2] == 'cpu':
     _devs = [mx.cpu(i) for i in range(8)]
 if sys.argv[2] == 'gpu':
     _devs = [mx.gpu()]    
 checkpoint_path = os.path.join('checkpoint', 'auto_sum')
-pretrained_model = mx.model.FeedForward.load(checkpoint_path, begin_epoch)
+pretrained_model = mx.model.FeedForward.load(checkpoint_path, epoch)
 
 
 def Perplexity(label, pred):
@@ -98,12 +99,17 @@ model = mx.model.FeedForward(ctx         = _devs,
                              arg_params  = pretrained_model.arg_params,
                              aux_params  = pretrained_model.aux_params,
                              num_epoch   = _num_epoch,
-                             begin_epoch = begin_epoch,
+                             begin_epoch = epoch,
                              optimizer   = opt)
 print('Previous model load complete.')
 
+y = pretrained_model.predict(X           = data_iter, 
+                             num_batch   = 1)
+import pdb; pdb.set_trace()                            
+                             
+# y = pretrained_model.score(X                  = data_iter, 
+#                            eval_metric        = mx.metric.np(Perplexity),
+#                            batch_end_callback = mx.callback.Speedometer(_batch_size, 50),
+#                            num_batch          = None)
 
-model.fit(X                  = data_iter,
-          eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 2000),
-          epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
+print(y)
