@@ -3,13 +3,7 @@ import os
 import sys
 import numpy as np
 from hier_lstm import HyperPara, hier_lstm_model, get_input_shapes
-from data_io import array_iter_with_init_states as array_iter
-#setup logging
-from imp import reload
-import logging
-reload(logging)
-logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', 
-                    level=logging.DEBUG, datefmt='%I:%M:%S')
+from copy import copy
 
          
 #model para
@@ -20,7 +14,7 @@ _input_size     = _dict_len + 2
 _num_hidden     = 512
 _num_embed      = 300
 _num_label      = _dict_len + 2
-_dropout        = 0.75
+_dropout        = 0.
 #opt para
 _learning_rate  = 0.001
 #training para
@@ -29,8 +23,9 @@ _batch_size     = 1
 _num_epoch      = 4
 
 #data
-
-name = 'test'
+data_name = 'data'
+label_name = 'label'
+name = 'training'
 data_path = os.path.join('data', name + '_data.npy')
 label_path = os.path.join('data', name + '_label.npy')
 data = np.load(data_path)
@@ -65,34 +60,44 @@ dec_para      = HyperPara(num_lstm_layer = _num_lstm_layer,
 sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
 init_dict = get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size)
 
-data_idx = 1
-data = data[1]
-label = label[1]
+data_idx = int(sys.argv[2])
+data = data[data_idx, :].reshape((1, 300))
+label = label[data_idx, :].reshape((1, 30))
+
+#import pdb; pdb.set_trace()
 
 print('Data loading complete.')
 
 
-epoch = int(sys.argv[1])
-_devs = [mx.gpu()]
-if sys.argv[2] == 'cpu':
-    _devs = [mx.cpu(i) for i in range(8)]
-else:
-    _devs = [mx.gpu()]    
+epoch = int(sys.argv[1])  
 checkpoint_path = os.path.join('checkpoint', 'auto_sum')
 pretrained_model = mx.model.FeedForward.load(checkpoint_path, epoch)
 
 print('Previous model load complete.')
 
-data_name = 'data'
-label_name = 'label'
-data_dict = copy(init_dict)
+
+state_dict = copy(init_dict)
 
 init_dict[data_name] = (_batch_size, sent_enc_para.seq_len * 3)
 init_dict[label_name] = (_batch_size, dec_para.seq_len)
 
-model_exec = sym.simple_bind(ctx=_devs, **init_dict)
+model_exec = sym.simple_bind(ctx=mx.gpu(), **init_dict)
+
 for key in model_exec.arg_dict.keys():
     if key in pretrained_model.arg_params:
         pretrained_model.arg_params[key].copyto(model_exec.arg_dict[key])
+for name, shape in state_dict.items():
+    mx.nd.zeros(shape).copyto(model_exec.arg_dict[name])
+
+mx.nd.array(data).copyto(model_exec.arg_dict[data_name])
+mx.nd.array(label).copyto(model_exec.arg_dict[label_name])
+model_exec.forward()
+
+prob = model_exec.outputs[0].asnumpy()
+
+idxs = np.argmax(prob, axis=1)
+
+print(idxs)
+print(label)
         
 
