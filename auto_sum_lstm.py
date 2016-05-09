@@ -18,7 +18,7 @@ _input_size     = _dict_len + 2
 _num_hidden     = 512
 _num_embed      = 300
 _num_label      = _dict_len + 2
-_dropout        = 0.5
+_dropout        = 0.
 #opt para
 _learning_rate  = 0.0005
 #training para
@@ -106,7 +106,7 @@ opt = mx.optimizer.Adam(learning_rate=_learning_rate)
 
 pre_trained = {'embed_weight': embed_weight}
 init = mx.initializer.Load(pre_trained,
-                           default_init=mx.initializer.Xavier(magnitude=1.5))
+                           default_init=mx.initializer.Xavier(magnitude=0.5))
 group2ctx = {'embed'      : mx.cpu(0),
              'preproc'    : mx.cpu(1),
              'sent_layers': mx.gpu(),
