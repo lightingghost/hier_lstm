@@ -106,7 +106,7 @@ opt = mx.optimizer.AdaDelta(learning_rate=_learning_rate)
 
 pre_trained = {'embed_weight': embed_weight}
 init = mx.initializer.Load(pre_trained,
-                           default_init=mx.initializer.Xavier(rnd_type='gaussian', magnitude=1))
+                           default_init=mx.initializer.Normal())
 group2ctx = {'embed'      : mx.cpu(0),
              'preproc'    : mx.cpu(1),
              'sent_layers': mx.gpu(),
@@ -122,5 +122,5 @@ checkpoint_path = os.path.join('checkpoint', 'auto_sum')
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 2000),
+          batch_end_callback = mx.callback.Speedometer(_batch_size, 200),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
