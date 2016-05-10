@@ -102,11 +102,11 @@ def Perplexity(label, pred):
 # def Perplexity(label, pred):
 #     return np.exp(np.mean(pred))
     
-opt = mx.optimizer.Adam(learning_rate=_learning_rate)
+opt = mx.optimizer.AdaDelta(learning_rate=_learning_rate)
 
 pre_trained = {'embed_weight': embed_weight}
 init = mx.initializer.Load(pre_trained,
-                           default_init=mx.initializer.Xavier(magnitude=0.5))
+                           default_init=mx.initializer.Xavier(rnd_type='gaussian', magnitude=1))
 group2ctx = {'embed'      : mx.cpu(0),
              'preproc'    : mx.cpu(1),
              'sent_layers': mx.gpu(),
