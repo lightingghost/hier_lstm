@@ -32,7 +32,6 @@ data = np.load(data_path)
 label = np.load(label_path)
 _nsamples = label.shape[0]
 
-import pdb; pdb.set_trace()
 
 # #model
 

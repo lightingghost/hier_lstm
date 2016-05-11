@@ -103,13 +103,12 @@ model = mx.model.FeedForward(ctx         = _devs,
                              optimizer   = opt)
 print('Previous model load complete.')
 
-y = pretrained_model.predict(X           = data_iter, 
-                             num_batch   = 1)
-import pdb; pdb.set_trace()                            
+# y = pretrained_model.predict(X           = data_iter, 
+#                              num_batch   = 1)                           
                              
-# y = pretrained_model.score(X                  = data_iter, 
-#                            eval_metric        = mx.metric.np(Perplexity),
-#                            batch_end_callback = mx.callback.Speedometer(_batch_size, 50),
-#                            num_batch          = None)
+y = pretrained_model.score(X                  = data_iter, 
+                           eval_metric        = mx.metric.np(Perplexity),
+                           batch_end_callback = mx.callback.Speedometer(_batch_size, 50),
+                           num_batch          = None)
 
 print(y)
