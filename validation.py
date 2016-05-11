@@ -16,10 +16,10 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
 _dict_len       = 55496
 _test           = False
 _num_lstm_layer = 1
-_input_size     = _dict_len + 2
+_input_size     = _dict_len + 3
 _num_hidden     = 512
 _num_embed      = 300
-_num_label      = _dict_len + 2
+_num_label      = _dict_len + 3
 _dropout        = 0.75
 #opt para
 _learning_rate  = 0.001
