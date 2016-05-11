@@ -108,7 +108,7 @@ opt = mx.optimizer.Adam(learning_rate=_learning_rate)
 
 pre_trained = {'embed_weight': embed_weight}
 init = mx.initializer.Load(pre_trained,
-                           default_init=mx.initializer.Xaiver(magnitude=2))
+                           default_init=mx.initializer.Xavier(magnitude=2))
 group2ctx = {'embed'      : mx.cpu(0),
              'preproc'    : mx.cpu(1),
              'sent_layers': mx.gpu(),
