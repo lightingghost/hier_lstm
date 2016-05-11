@@ -5,6 +5,13 @@ import pickle
 from collections import defaultdict
 import numpy as np
 
+'''
+0     : Padding
+1     : end
+2     : unknown
+'''
+
+
 def convert(fin, fout, num=sys.maxsize):
     i = 1
     nparas = []
@@ -193,9 +200,9 @@ def trans2npy(fin, max_sent_len=100, max_title_len=30):
     nsamples = len(data)
     n_sent = 3
     data1 = np.zeros((nsamples, max_sent_len * n_sent), dtype=np.int32)
-    data1.fill(-1)
+    data1.fill(-2)
     label1 = np.zeros((nsamples, max_title_len), dtype=np.int32)
-    label1.fill(-1)
+    label1.fill(-2)
     for i in range(nsamples):
         j = 0
         for sent in data[i]:
@@ -208,6 +215,8 @@ def trans2npy(fin, max_sent_len=100, max_title_len=30):
         
     print('Saving')
     
+    data1 += 2
+    label1 += 2
     np.save('data.npy', data1)
     np.save('label.npy', label1)
     
@@ -231,7 +240,7 @@ def sep_data(data_filename, label_filename, seed=1234, val_ratio=0.15, test_rati
         np.save(label_name, label[idxs[i]])
         
 if __name__ == '__main__':
-    # fin = open('sample_short_trans', 'r')
+    fin = open('sample_short_trans', 'r')
     # fout = open('sample_short_trans', 'w')
     # short_version(fin, fout)
     # build_vocab(fin)
@@ -240,7 +249,7 @@ if __name__ == '__main__':
     # trans_word2idx(fin, fout, 0.15)
     # trans_idx2word(fin, fout)
     # add_sent_term(fin, fout)
-    # trans2npy(fin)
-    sep_data('data.npy', 'label.npy')
+    trans2npy(fin)
+    # sep_data('data.npy', 'label.npy')
     # fin.close()
     # fout.close()
