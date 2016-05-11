@@ -10,10 +10,10 @@ from copy import copy
 _dict_len       = 55496
 _test           = False
 _num_lstm_layer = 1
-_input_size     = _dict_len + 2
+_input_size     = _dict_len + 3
 _num_hidden     = 512
 _num_embed      = 300
-_num_label      = _dict_len + 2
+_num_label      = _dict_len + 3
 _dropout        = 0.5
 #opt para
 _learning_rate  = 0.001
@@ -32,7 +32,7 @@ data = np.load(data_path)
 label = np.load(label_path)
 _nsamples = label.shape[0]
 
-
+import pdb; pdb.set_trace()
 
 # #model
 
@@ -64,7 +64,7 @@ data_idx = int(sys.argv[2])
 data = data[data_idx, :].reshape((1, 300))
 label = label[data_idx, :].reshape((1, 30))
 
-#import pdb; pdb.set_trace()
+
 
 print('Data loading complete.')
 

@@ -240,7 +240,7 @@ def sep_data(data_filename, label_filename, seed=1234, val_ratio=0.15, test_rati
         np.save(label_name, label[idxs[i]])
         
 if __name__ == '__main__':
-    fin = open('sample_short_trans', 'r')
+    # fin = open('sample_short_trans', 'r')
     # fout = open('sample_short_trans', 'w')
     # short_version(fin, fout)
     # build_vocab(fin)
@@ -249,7 +249,7 @@ if __name__ == '__main__':
     # trans_word2idx(fin, fout, 0.15)
     # trans_idx2word(fin, fout)
     # add_sent_term(fin, fout)
-    trans2npy(fin)
-    # sep_data('data.npy', 'label.npy')
+    # trans2npy(fin)
+    sep_data('data.npy', 'label.npy')
     # fin.close()
     # fout.close()

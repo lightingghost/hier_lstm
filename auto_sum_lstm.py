@@ -23,8 +23,8 @@ _dropout        = 0.
 _learning_rate  = 0.004
 #training para
 _devs           = [mx.gpu()]
-_batch_size     = 32
-_num_epoch      = 1
+_batch_size     = 25
+_num_epoch      = 40
 
 #data
 
@@ -124,5 +124,5 @@ checkpoint_path = os.path.join('checkpoint', 'auto_sum')
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 200),
+          batch_end_callback = mx.callback.Speedometer(_batch_size, 8),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))

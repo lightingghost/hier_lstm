@@ -24,14 +24,16 @@ _dropout        = 0.75
 _learning_rate  = 0.001
 #training para
 _devs           = [mx.gpu()]
-_batch_size     = 32
-_num_epoch      = 3
+_batch_size     = 25
+_num_epoch      = 100
 
 #data
 
 name = 'training'
-data_path = os.path.join('data', name + '_data.npy')
-label_path = os.path.join('data', name + '_label.npy')
+# data_path = os.path.join('data', name + '_data.npy')
+# label_path = os.path.join('data', name + '_label.npy')
+data_path = os.path.join('data', 'data1000.npy')
+label_path = os.path.join('data', 'label1000.npy')
 data = np.load(data_path)
 label = np.load(label_path)
 _nsamples = label.shape[0]
@@ -105,5 +107,5 @@ print('Previous model load complete.')
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 2000),
+          batch_end_callback = mx.callback.Speedometer(_batch_size, 8),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
