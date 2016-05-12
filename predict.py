@@ -96,6 +96,7 @@ model_exec.forward()
 
 prob = model_exec.outputs[0].asnumpy()
 
+import pdb; pdb.set_trace()
 idxs = np.argmax(prob, axis=1)
 
 print(idxs)
