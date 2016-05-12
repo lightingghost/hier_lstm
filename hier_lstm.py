@@ -193,8 +193,7 @@ def lstm_decoder(in_lstm_state, num_lstm_layer, seq_len, num_hidden, num_label, 
 
 def lstm_decoder_2(in_lstm_state, num_lstm_layer, seq_len, num_hidden, num_label, dropout=0.):
     # pass the state             
-    # with mx.AttrScope(ctx_group='embed'):
-    #     embed_weight=mx.sym.Variable("embed_weight")
+
     with mx.AttrScope(ctx_group='decode'):
         cls_weight = mx.sym.Variable("cls_weight")
         cls_bias = mx.sym.Variable("cls_bias")
