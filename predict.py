@@ -2,7 +2,7 @@ import mxnet as mx
 import os
 import sys
 import numpy as np
-from hier_lstm import HyperPara, hier_lstm_model, get_input_shapes
+from hier_lstm_pred import HyperPara, hier_lstm_model, get_input_shapes
 from copy import copy
 
          
@@ -93,10 +93,12 @@ for name, shape in state_dict.items():
 mx.nd.array(data).copyto(model_exec.arg_dict[data_name])
 mx.nd.array(label).copyto(model_exec.arg_dict[label_name])
 model_exec.forward()
-
+out = model_exec.outputs
 prob = model_exec.outputs[0].asnumpy()
 
 
+
+import pdb; pdb.set_trace()
 idxs = np.argmax(prob, axis=1)
 
 print(idxs)

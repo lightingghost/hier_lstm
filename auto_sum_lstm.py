@@ -26,7 +26,7 @@ _learning_rate  = 0.004
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 20
-_num_epoch      = 40
+_num_epoch      = 20
 
 #data
 
@@ -110,7 +110,7 @@ opt = mx.optimizer.Adam(learning_rate=_learning_rate)
 
 pre_trained = {'embed_weight': embed_weight}
 init = mx.initializer.Load(pre_trained,
-                           default_init=mx.initializer.Xavier(magnitude=2))
+                           default_init=mx.initializer.Xavier(magnitude=6))
 group2ctx = {'embed'      : mx.cpu(0),
              'preproc'    : mx.cpu(1),
              'sent_layers': mx.gpu(),
