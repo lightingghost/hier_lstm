@@ -3,6 +3,7 @@ import os
 import numpy as np
 from hier_lstm import HyperPara, hier_lstm_model, get_input_shapes
 from data_io import array_iter_with_init_states as array_iter
+from bucket_io import BucketLabelIter
 #setup logging
 from imp import reload
 import logging
@@ -11,6 +12,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     level=logging.DEBUG, datefmt='%I:%M:%S')
 
 #model para
+_auto_bucketing = True
 _dict_len       = 55496
 _test           = False
 _num_lstm_layer = 1
@@ -23,7 +25,7 @@ _dropout        = 0.
 _learning_rate  = 0.004
 #training para
 _devs           = [mx.gpu()]
-_batch_size     = 25
+_batch_size     = 20
 _num_epoch      = 40
 
 #data
@@ -46,52 +48,52 @@ embed_weight = mx.nd.array(embed_weight)
 
 print('Data loading complete.')
 #model
-
 sent_enc_para = HyperPara(num_lstm_layer = _num_lstm_layer,
-                          seq_len        = 100,
-                          input_size     = _input_size,
-                          num_hidden     = _num_hidden,
-                          num_embed      = _num_embed,
-                          num_label      = _num_label,
-                          dropout        = _dropout)
+                            seq_len        = 100,
+                            input_size     = _input_size,
+                            num_hidden     = _num_hidden,
+                            num_embed      = _num_embed,
+                            num_label      = _num_label,
+                            dropout        = _dropout)
 doc_enc_para  = HyperPara(num_lstm_layer = _num_lstm_layer,
-                          seq_len        = 3,
-                          input_size     = _input_size,
-                          num_hidden     = _num_hidden,
-                          num_embed      = _num_embed,
-                          num_label      = _num_label,
-                          dropout        = _dropout)
+                            seq_len        = 3,
+                            input_size     = _input_size,
+                            num_hidden     = _num_hidden,
+                            num_embed      = _num_embed,
+                            num_label      = _num_label,
+                            dropout        = _dropout)
 dec_para      = HyperPara(num_lstm_layer = _num_lstm_layer,
-                          seq_len        = 30,
-                          input_size     = _input_size,
-                          num_hidden     = _num_hidden,
-                          num_embed      = _num_embed,
-                          num_label      = _num_label,
-                          dropout        = _dropout)
+                            seq_len        = 30,
+                            input_size     = _input_size,
+                            num_hidden     = _num_hidden,
+                            num_embed      = _num_embed,
+                            num_label      = _num_label,
+                            dropout        = _dropout)                            
+def sym_gen(seq_len):
+    dec_para      = HyperPara(num_lstm_layer = _num_lstm_layer,
+                              seq_len        = seq_len,
+                              input_size     = _input_size,
+                              num_hidden     = _num_hidden,
+                              num_embed      = _num_embed,
+                              num_label      = _num_label,
+                              dropout        = _dropout)
 
+    data_name = 'data'
+    label_name = 'label'
+    sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
+    return sym
 
-data_name = 'data'
-label_name = 'label'
-sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
-
-print('Model set up complete.')
-
-
-#data iter
+#data iter  
 input_dict = {'data': data}
 init_dict = get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size)
 
-
-# for state, shape in init_dict.items():
-#     input_dict[state] = mx.nd.zeros((_nsamples, _num_hidden))    
-# data_iter = mx.io.NDArrayIter(data              = input_dict, 
-#                               label             = label, 
-#                               batch_size        = _batch_size, 
-#                               last_batch_handle = 'discard')
-
-
-data_iter = array_iter(data, label, _batch_size, list(init_dict.items()),
-                       data_name='data', label_name='label', random=False)
+if _auto_bucketing:
+    data_iter = BucketLabelIter(data, label, [], _batch_size, list(init_dict.items()))
+    symbol = sym_gen
+else:
+    data_iter = array_iter(data, label, _batch_size, list(init_dict.items()),
+                           data_name='data', label_name='label', random=False)
+    symbol = sym_gen(30)
                           
 #train
 def Perplexity(label, pred):
@@ -116,7 +118,7 @@ group2ctx = {'embed'      : mx.cpu(0),
              'dec_layers' : mx.gpu(),
              'loss'       : mx.gpu()}
 model = mx.model.FeedForward(ctx         = _devs,
-                             symbol      = sym,
+                             symbol      = symbol,
                              num_epoch   = _num_epoch,
                              optimizer   = opt,
                              initializer = init)
