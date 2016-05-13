@@ -1,62 +1,19 @@
-# pylint: disable=C0111,too-many-arguments,too-many-instance-attributes,too-many-locals,redefined-outer-name,fixme
-# pylint: disable=superfluous-parens, no-member, invalid-name
 import sys
-sys.path.insert(0, "../../python")
 import numpy as np
 import mxnet as mx
+from collections import defaultdict
 
-# The interface of a data iter that works for bucketing
-#
-# DataIter
-#   - default_bucket_key: the bucket key for the default symbol.
-#
-# DataBatch
-#   - provide_data: same as DataIter, but specific to this batch
-#   - provide_label: same as DataIter, but specific to this batch
-#   - bucket_key: the key for the bucket that should be used for this batch
-
-def default_read_content(path):
-    with open(path) as ins:
-        content = ins.read()
-        content = content.replace('\n', ' <eos> ').replace('. ', ' <eos> ')
-        return content
-
-def default_build_vocab(path):
-    content = default_read_content(path)
-    content = content.split(' ')
-    idx = 1 # 0 is left for zero-padding
-    the_vocab = {}
-    for word in content:
-        if len(word) == 0:
-            continue
-        if not word in the_vocab:
-            the_vocab[word] = idx
-            idx += 1
-    return the_vocab
-
-def default_text2id(sentence, the_vocab):
-    words = sentence.split(' ')
-    words = [the_vocab[w] for w in words if len(w) > 0]
-    return words
-
-def default_gen_buckets(sentences, batch_size, the_vocab):
-    len_dict = {}
-    max_len = -1
-    for sentence in sentences:
-        words = default_text2id(sentence, the_vocab)
-        if len(words) == 0:
-            continue
-        if len(words) > max_len:
-            max_len = len(words)
-        if len(words) in len_dict:
-            len_dict[len(words)] += 1
-        else:
-            len_dict[len(words)] = 1
+def default_gen_buckets(sentences, batch_size):
+    len_dict = defaultdict(int)
+    lens = np.argwhere(sentences == 1)[:, 1]
+    max_len = lens.max()
+    for length in lens:
+        len_dict[length] += 1
     print(len_dict)
 
     tl = 0
     buckets = []
-    for l, n in len_dict.iteritems(): # TODO: There are better heuristic ways to do this    
+    for l, n in len_dict.items(): # TODO: There are better heuristic ways to do this    
         if n + tl >= batch_size:
             buckets.append(l)
             tl = 0
@@ -105,27 +62,17 @@ class DummyIter(mx.io.DataIter):
     def next(self):
         return self.the_batch
 
-class BucketSentenceIter(mx.io.DataIter):
-    def __init__(self, path, vocab, buckets, batch_size,
-                 init_states, data_name='data', label_name='label',
-                 seperate_char=' <eos> ', text2id=None, read_content=None):
-        super(BucketSentenceIter, self).__init__()
+class BucketLabelIter(mx.io.DataIter):
+    def __init__(self, data, label, buckets, batch_size,
+                 init_states, data_name='data', label_name='label'):
+        super(BucketLabelIter, self).__init__()
 
-        if text2id == None:
-            self.text2id = default_text2id
-        else:
-            self.text2id = text2id
-        if read_content == None:
-            self.read_content = default_read_content
-        else:
-            self.read_content = read_content
-        content = self.read_content(path)
-        sentences = content.split(seperate_char)
+        self.data = data
+        self.label = label
 
         if len(buckets) == 0:
             buckets = default_gen_buckets(sentences, batch_size, vocab)
 
-        self.vocab_size = len(vocab)
         self.data_name = data_name
         self.label_name = label_name
 
