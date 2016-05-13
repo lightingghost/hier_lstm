@@ -66,8 +66,6 @@ class BucketLabelIter(mx.io.DataIter):
                  init_states, data_name='data', label_name='label'):
         super(BucketLabelIter, self).__init__()
 
-        self.data = data
-        self.label = label
         self.data_dim = data.shape[1]
         assert(data.shape[0] == label.shape[0])
         self.nsamples = label.shape[0]
@@ -102,7 +100,7 @@ class BucketLabelIter(mx.io.DataIter):
             nlabel.append(label[x, :buckets[i]])
         self.data = ndata
         self.label = nlabel
-
+        
         # Get the size of each bucket, so that we could sample
         # uniformly from the bucket
         bucket_sizes = [len(x) for x in self.idx_buckets]
@@ -119,24 +117,27 @@ class BucketLabelIter(mx.io.DataIter):
 
         self.provide_data = [(data_name, (batch_size, self.data_dim))] + init_states
         self.provide_label = [(label_name, (self.batch_size, self.default_bucket_key))]
+        
+        
 
     def make_data_iter_plan(self):
         "make a random data iteration plan"
         # truncate each bucket into multiple of batch-size
         bucket_n_batches = []
         for i in range(len(self.idx_buckets)):
-            bucket_n_batches.append(int(len(self.idx_buckets) / self.batch_size))
+            bucket_n_batches.append(int(len(self.idx_buckets[i]) / self.batch_size))
             self.data[i] = self.data[i][:int(bucket_n_batches[i]*self.batch_size)]
             self.label[i] = self.label[i][:int(bucket_n_batches[i]*self.batch_size)]
 
         bucket_plan = np.hstack([np.zeros(n, int)+i for i, n in enumerate(bucket_n_batches)])
         np.random.shuffle(bucket_plan)
 
-        bucket_idx_all = [np.random.permutation(len(x)) for x in self.idx_buckets]
+        bucket_idx_all = [np.random.permutation(len(x)) for x in self.data]
 
         self.bucket_plan = bucket_plan
         self.bucket_idx_all = bucket_idx_all
         self.bucket_curr_idx = [0 for x in self.data]
+        
 
 
     def __iter__(self):
@@ -149,6 +150,7 @@ class BucketLabelIter(mx.io.DataIter):
             self.bucket_curr_idx[i_bucket] += self.batch_size
             data = self.data[i_bucket][idx]
             label = self.label[i_bucket][idx]
+            
 
             data_all = [mx.nd.array(data)] + self.init_state_arrays
             label_all = [mx.nd.array(label)]
@@ -156,7 +158,7 @@ class BucketLabelIter(mx.io.DataIter):
             label_names = [self.label_name]
 
             data_batch = SimpleBatch(data_names, data_all, label_names, label_all,
-                                     self.buckets[i_bucket])
+                                     self.bucket_lens[i_bucket])
             yield data_batch
 
     def reset(self):
