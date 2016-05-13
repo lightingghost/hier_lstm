@@ -12,9 +12,10 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     level=logging.DEBUG, datefmt='%I:%M:%S')
 
 #model para
-_auto_bucketing = True
-_dict_len       = 55496
 _test           = False
+_auto_bucketing = True
+_use_pretrained = False
+_dict_len       = 55496
 _num_lstm_layer = 1
 _input_size     = _dict_len + 3
 _num_hidden     = 512
@@ -108,9 +109,13 @@ def Perplexity(label, pred):
     
 opt = mx.optimizer.Adam(learning_rate=_learning_rate)
 
-pre_trained = {'embed_weight': embed_weight}
-init = mx.initializer.Load(pre_trained,
-                           default_init=mx.initializer.Xavier(magnitude=6))
+if _use_pretrained:
+    pre_trained = {'embed_weight': embed_weight}
+    init = mx.initializer.Load(pre_trained,
+                            default_init=mx.initializer.Xavier(magnitude=2.34))
+else:
+    init = mx.initializer.Xavier(factor_type="in", magnitude=23.4)
+    
 group2ctx = {'embed'      : mx.cpu(0),
              'preproc'    : mx.cpu(1),
              'sent_layers': mx.gpu(),
