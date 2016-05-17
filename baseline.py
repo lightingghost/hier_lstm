@@ -45,9 +45,10 @@ def basic_sum(file, test_ratio=0.15, israndom=True):
         doc = ' '.join(content)
         parser = PlaintextParser.from_string(doc, Tokenizer(_language))
         sum_sents = summarizer(parser.document, _sent_count)
+        if len(sum_sents) != _sent_count:
+            break
         summary = str(sum_sents[0])
         score = rouge.score_summary(summary, ref_text)
-        
         for k, v in score.items():
             scores[k].append(v)
         print('{} / {} processed.'.format(i, ntests), end='\r')
