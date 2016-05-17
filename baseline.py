@@ -17,7 +17,7 @@ _language = 'english'
 _sent_count = 1
 
 
-def basic_sum(file, test_ratio=0.15, israndom=True):
+def basic_sum(file, test_ratio=0.10, israndom=True):
     # extract test files
     file_lines = file.read().splitlines()
     nsamples = len(file_lines)
@@ -46,7 +46,7 @@ def basic_sum(file, test_ratio=0.15, israndom=True):
         parser = PlaintextParser.from_string(doc, Tokenizer(_language))
         sum_sents = summarizer(parser.document, _sent_count)
         if len(sum_sents) != _sent_count:
-            break
+            continue
         summary = str(sum_sents[0])
         score = rouge.score_summary(summary, ref_text)
         for k, v in score.items():
