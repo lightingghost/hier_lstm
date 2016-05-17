@@ -3,6 +3,7 @@ import json
 import os
 from itertools import chain
 from collections import defaultdict
+from statistics import mean
 
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
@@ -47,14 +48,19 @@ def basic_sum(file, test_ratio=0.15, israndom=True):
         parser = PlaintextParser.from_string(doc, Tokenizer(_language))
         sum_sents = summarizer(parser.document, _sent_count)
         summary = str(sum_sents[0])
+        #import pdb; pdb.set_trace()
         score = rouge.score_summary(summary, ref_text)
+        
         for k, v in score.items():
-            scoers[k].append(v)
-   
-    print(scores)
+            scores[k].append(v)
+    result = {}
+    for k, v in scores.items():
+        result[k] = mean(v)
+    return result
         
 if __name__ == '__main__':
     path = os.path.join('data', 'sample_short')
     file = open(path, 'r')
-    basic_sum(file)
+    result = basic_sum(file)
+    
     file.close()
