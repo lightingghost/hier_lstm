@@ -21,13 +21,11 @@ def basic_sum(file, test_ratio=0.15, israndom=True):
     # extract test files
     file_lines = file.read().splitlines()
     nsamples = len(file_lines)
-    #ntests = int(nsamples * test_ratio)
-    ntests = 2
+    ntests = int(nsamples * test_ratio)
     if israndom:
         seq = np.random.permutation(nsamples)
     else:
         seq = np.arange(nsamples)
-    test_idx = list(seq[ : ntests])
     
     # summerizer
     stemmer = Stemmer(_language)
@@ -38,8 +36,8 @@ def basic_sum(file, test_ratio=0.15, israndom=True):
     rouge = Rouge155()
     
     scores = defaultdict(list)
-    for idx in test_idx:
-        line = file_lines[idx]
+    for i in range(ntests):
+        line = file_lines[seq[i]]
         sample = json.loads(line)
         content = sample['content']
         title = sample['title']
@@ -48,11 +46,11 @@ def basic_sum(file, test_ratio=0.15, israndom=True):
         parser = PlaintextParser.from_string(doc, Tokenizer(_language))
         sum_sents = summarizer(parser.document, _sent_count)
         summary = str(sum_sents[0])
-        #import pdb; pdb.set_trace()
         score = rouge.score_summary(summary, ref_text)
         
         for k, v in score.items():
             scores[k].append(v)
+        print('{} / {} processed.'.format(i, ntests), end='\r')
     result = {}
     for k, v in scores.items():
         result[k] = mean(v)
@@ -62,5 +60,8 @@ if __name__ == '__main__':
     path = os.path.join('data', 'sample_short')
     file = open(path, 'r')
     result = basic_sum(file)
-    
     file.close()
+    result_path = os.path.join('result', 'baseline')
+    outfile = open(result_path, 'w')
+    json.dump(result, outfile)
+    
