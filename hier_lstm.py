@@ -253,7 +253,7 @@ def hier_lstm_model(data_name, label_name,
     loss = seq_cross_entropy(label, pred)
     return loss
 
-def get_input_shapes(sent_enc_para, doc_enc_para, dec_para, batch_size):
+def get_hier_input_shapes(sent_enc_para, doc_enc_para, dec_para, batch_size):
     # input_shapes = {}
     # input_shapes['data'] = (batch_size, sent_enc_para.seq_len * 3)
     # input_shapes['softmax_label'] = (batch_size, dec_para.seq_len)

@@ -16,7 +16,7 @@ _test           = False
 _auto_bucketing = True
 _use_pretrained = False
 _dict_len       = 55496
-_num_lstm_layer = 1
+_num_lstm_layer = 2
 _input_size     = _dict_len + 3
 _num_hidden     = 512
 _num_embed      = 300
@@ -86,7 +86,7 @@ def sym_gen(seq_len):
 
 #data iter  
 input_dict = {'data': data}
-init_dict = get_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size)
+init_dict = get_hier_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size)
 
 if _auto_bucketing:
     data_iter = BucketLabelIter(data, label, [], _batch_size, list(init_dict.items()))

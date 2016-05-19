@@ -102,17 +102,17 @@ def predict(epoch, data_idx):
 
 
     # # import pdb; pdb.set_trace()
-    # idxs = np.argmax(prob, axis=1)
+    idxs = np.argmax(prob, axis=1)
 
-    # print(idxs)
-    # print(label)
+    print(idxs)
+    print(label)
     return out[1].asnumpy()
             
 if __name__ == '__main__':
     epoch = int(sys.argv[1])
     data_idx = int(sys.argv[2])  
-    # result = predict(epoch, data_idx)
-    result = np.zeros((100, 512))
-    for i in range(100):
-        result[i] = predict(40, i)
-    import pdb; pdb.set_trace()
+    result = predict(epoch, data_idx)
+    # result = np.zeros((20, 512))
+    # for i in range(20):
+    #     result[i] = predict(40, i)
+    # import pdb; pdb.set_trace()
