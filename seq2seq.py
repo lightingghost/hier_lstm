@@ -3,6 +3,7 @@ import os
 import numpy as np
 from normal_lstm import HyperPara, lstm_model, get_input_shapes
 from bucket_io import BucketDataIter
+from data_io import array_iter_with_init_states as array_iter
 #setup logging
 from imp import reload
 import logging
@@ -15,7 +16,7 @@ _test           = False
 _auto_bucketing = True
 _use_pretrained = True
 _dict_len       = 55496
-_num_lstm_layer = 3
+_num_lstm_layer = 1
 _input_size     = _dict_len + 3
 _num_hidden     = 512
 _num_embed      = 300
@@ -71,6 +72,21 @@ def sym_gen(seq_len):
     return sym
 
 #data iter  
+
+enc_para = HyperPara(num_lstm_layer = _num_lstm_layer,
+                         seq_len        = 300,
+                         input_size     = _input_size,
+                         num_hidden     = _num_hidden,
+                         num_embed      = _num_embed,
+                         num_label      = None,
+                         dropout        = _dropout)
+dec_para = HyperPara(num_lstm_layer = _num_lstm_layer,
+                         seq_len        = 30,
+                         input_size     = None,
+                         num_hidden     = _num_hidden,
+                         num_embed      = None,
+                         num_label      = _num_label,
+                         dropout        = _dropout)
 
 init_dict = get_input_shapes(enc_para, dec_para, _batch_size)
 

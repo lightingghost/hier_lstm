@@ -249,7 +249,7 @@ def concat(data_filename, outname):
         mask = sent != 0
         new_sent = sent[mask]
         new_data[i, :len(new_sent)] = new_sent
-        new_data[i, len(new_sent)] = -1
+        #new_data[i, len(new_sent)] = -1
     np.save(outname, new_data)
         
         
@@ -265,6 +265,6 @@ if __name__ == '__main__':
     # add_sent_term(fin, fout)
     # trans2npy(fin)
     # sep_data('data.npy', 'label.npy')
-    concat('data1000.npy', 'ndata1000.npy')
+    concat('data1000.npy', 'nndata1000.npy')
     # fin.close()
     # fout.close()

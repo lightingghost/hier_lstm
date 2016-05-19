@@ -117,8 +117,6 @@ class BucketLabelIter(mx.io.DataIter):
         self.provide_data = [(data_name, (batch_size, self.data_dim))] + init_states
         self.provide_label = [(label_name, (self.batch_size, self.default_bucket_key))]
         
-        
-
     def make_data_iter_plan(self):
         "make a random data iteration plan"
         # truncate each bucket into multiple of batch-size
@@ -166,16 +164,18 @@ class BucketLabelIter(mx.io.DataIter):
 class BucketDataIter(mx.io.DataIter):
     def __init__(self, data, label, batch_size, init_states, 
                  data_name='data', label_name='label'):
-        super(BucketLabelIter, self).__init__()
+        super(BucketDataIter, self).__init__()
 
         self.data_dim = data.shape[1]
         self.label_dim = label.shape[1]
         assert(data.shape[0] == label.shape[0])
         self.nsamples = label.shape[0]
         
-        data_lens = np.argwhere(label == -1)[:, 1]
+        data_lens = np.argwhere(data == -1)[:, 1]
+        for i in range(self.nsamples):
+            data[i, data_lens[i]] = 0
         buckets = default_gen_buckets(data, data_lens, batch_size)
-
+        
         self.data_name = data_name
         self.label_name = label_name
 

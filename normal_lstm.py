@@ -2,6 +2,7 @@ import sys
 import mxnet as mx
 import numpy as np
 from collections import namedtuple
+from copy import copy
 
 LSTMState = namedtuple("LSTMState", ["c", "h"])
 LSTMParam = namedtuple("LSTMParam", ["i2h_weight", "i2h_bias",
@@ -134,7 +135,7 @@ def lstm_model(data_name, label_name, enc_para, dec_para):
                              enc_para.num_hidden, enc_para.num_embed, enc_para.dropout)
     pred = lstm_decoder(enc_state, dec_para.num_lstm_layer, dec_para.seq_len,
                         dec_para.num_hidden, dec_para.num_label, dec_para.dropout)
-    loss = seq_cross_entropy(label, pred)
+    loss = seq_softmax(label, pred)
     return loss
     
 def get_input_shapes(enc_para, dec_para, batch_size):
