@@ -7,6 +7,8 @@ def default_gen_buckets(sentences, lens, batch_size):
     len_dict = defaultdict(int)
     max_len = lens.max()
     for length in lens:
+        if length == 0:
+            continue
         len_dict[length] += 1
 
     tl = 0
