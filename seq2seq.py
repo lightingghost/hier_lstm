@@ -1,7 +1,7 @@
 import mxnet as mx
 import os
 import numpy as np
-from hier_lstm import HyperPara, hier_lstm_model, get_hier_input_shapes
+from normal_lstm import HyperPara, lstm_model, get_input_shapes
 from data_io import array_iter_with_init_states as array_iter
 from bucket_io import BucketLabelIter
 #setup logging
@@ -49,44 +49,31 @@ embed_weight = mx.nd.array(embed_weight)
 
 print('Data loading complete.')
 #model
-sent_enc_para = HyperPara(num_lstm_layer = _num_lstm_layer,
-                            seq_len        = 100,
-                            input_size     = _input_size,
-                            num_hidden     = _num_hidden,
-                            num_embed      = _num_embed,
-                            num_label      = _num_label,
-                            dropout        = _dropout)
-doc_enc_para  = HyperPara(num_lstm_layer = _num_lstm_layer,
-                            seq_len        = 3,
-                            input_size     = _input_size,
-                            num_hidden     = _num_hidden,
-                            num_embed      = _num_embed,
-                            num_label      = _num_label,
-                            dropout        = _dropout)
-dec_para      = HyperPara(num_lstm_layer = _num_lstm_layer,
-                            seq_len        = 30,
-                            input_size     = _input_size,
-                            num_hidden     = _num_hidden,
-                            num_embed      = _num_embed,
-                            num_label      = _num_label,
-                            dropout        = _dropout)                            
-def sym_gen(seq_len):
-    dec_para      = HyperPara(num_lstm_layer = _num_lstm_layer,
-                              seq_len        = seq_len,
-                              input_size     = _input_size,
-                              num_hidden     = _num_hidden,
-                              num_embed      = _num_embed,
-                              num_label      = _num_label,
-                              dropout        = _dropout)
+                           
+def sym_gen(seq_lens):
+    enc_para = HyperPara(num_lstm_layer = _num_lstm_layer,
+                         seq_len        = seq_lens[0],
+                         input_size     = _input_size,
+                         num_hidden     = _num_hidden,
+                         num_embed      = _num_embed,
+                         num_label      = None,
+                         dropout        = _dropout)
+    dec_para = HyperPara(num_lstm_layer = _num_lstm_layer,
+                         seq_len        = seq_lens[1],
+                         input_size     = None,
+                         num_hidden     = _num_hidden,
+                         num_embed      = None,
+                         num_label      = _num_label,
+                         dropout        = _dropout)
 
     data_name = 'data'
     label_name = 'label'
-    sym = hier_lstm_model(data_name, label_name, sent_enc_para, doc_enc_para, dec_para)
+    sym = lstm_model(data_name, label_name, enc_para, dec_para)
     return sym
 
 #data iter  
 input_dict = {'data': data}
-init_dict = get_hier_input_shapes(sent_enc_para, doc_enc_para, dec_para, _batch_size)
+init_dict = get_input_shapes(enc_para, dec_para, _batch_size)
 
 if _auto_bucketing:
     data_iter = BucketLabelIter(data, label, [], _batch_size, list(init_dict.items()))

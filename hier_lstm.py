@@ -47,7 +47,7 @@ def sentence_lstm(indata, sent_idx, param_cells, num_lstm_layer, seq_len, num_hi
     for i in range(num_lstm_layer):
         with mx.AttrScope(ctx_group='sent_layers'):
             state = LSTMState(c=mx.sym.Variable("sent%d_l%d_init_c" % (sent_idx, i)),
-                            h=mx.sym.Variable("sent%d_l%d_init_h" % (sent_idx, i)))
+                              h=mx.sym.Variable("sent%d_l%d_init_h" % (sent_idx, i)))
         last_states.append(state)
         
     for seqidx in range(seq_len):
