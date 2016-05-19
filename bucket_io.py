@@ -164,17 +164,17 @@ class BucketLabelIter(mx.io.DataIter):
         self.bucket_curr_idx = [0 for x in self.data]
         
 class BucketDataIter(mx.io.DataIter):
-    def __init__(self, data, label, buckets, batch_size,
-                 init_states, data_name='data', label_name='label'):
+    def __init__(self, data, label, batch_size, init_states, 
+                 data_name='data', label_name='label'):
         super(BucketLabelIter, self).__init__()
 
         self.data_dim = data.shape[1]
+        self.label_dim = label.shape[1]
         assert(data.shape[0] == label.shape[0])
         self.nsamples = label.shape[0]
         
-        label_lens = np.argwhere(label == 1)[:, 1] + 1
-        if len(buckets) == 0:
-            buckets = default_gen_buckets(label, label_lens, batch_size)
+        data_lens = np.argwhere(label == -1)[:, 1]
+        buckets = default_gen_buckets(data, data_lens, batch_size)
 
         self.data_name = data_name
         self.label_name = label_name
@@ -188,7 +188,7 @@ class BucketDataIter(mx.io.DataIter):
 
         for idx in range(self.nsamples):
             for i, bkt in enumerate(buckets):
-                if bkt >= label_lens[idx]:
+                if bkt >= data_lens[idx]:
                     self.idx_buckets[i].append(idx)
                     break
             # we just ignore the sentence it is longer than the maximum
@@ -198,8 +198,8 @@ class BucketDataIter(mx.io.DataIter):
         nlabel = []
         ndata = []
         for i, x in enumerate(self.idx_buckets):
-            ndata.append(data[x])
-            nlabel.append(label[x, :buckets[i]])
+            ndata.append(data[x, :buckets[i]])
+            nlabel.append(label[x])
         self.data = ndata
         self.label = nlabel
         
@@ -217,8 +217,8 @@ class BucketDataIter(mx.io.DataIter):
         self.init_states = init_states
         self.init_state_arrays = [mx.nd.zeros(x[1]) for x in init_states]
 
-        self.provide_data = [(data_name, (batch_size, self.data_dim))] + init_states
-        self.provide_label = [(label_name, (self.batch_size, self.default_bucket_key))]
+        self.provide_data = [(data_name, (self.batch_size, self.default_bucket_key))] + init_states
+        self.provide_label = [(label_name, (self.batch_size, self.label_dim))]
         
         
 

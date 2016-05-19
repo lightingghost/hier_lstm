@@ -2,8 +2,7 @@ import mxnet as mx
 import os
 import numpy as np
 from normal_lstm import HyperPara, lstm_model, get_input_shapes
-from data_io import array_iter_with_init_states as array_iter
-from bucket_io import BucketLabelIter
+from bucket_io import BucketDataIter
 #setup logging
 from imp import reload
 import logging
@@ -14,9 +13,9 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
 #model para
 _test           = False
 _auto_bucketing = True
-_use_pretrained = False
+_use_pretrained = True
 _dict_len       = 55496
-_num_lstm_layer = 2
+_num_lstm_layer = 3
 _input_size     = _dict_len + 3
 _num_hidden     = 512
 _num_embed      = 300
@@ -37,7 +36,7 @@ else:
     name = 'training'
 # data_path = os.path.join('data', name + '_data.npy')
 # label_path = os.path.join('data', name + '_label.npy')
-data_path = os.path.join('data', 'data1000.npy')
+data_path = os.path.join('data', 'ndata1000.npy')
 label_path = os.path.join('data', 'label1000.npy')
 data = np.load(data_path)
 label = np.load(label_path)
@@ -50,16 +49,16 @@ embed_weight = mx.nd.array(embed_weight)
 print('Data loading complete.')
 #model
                            
-def sym_gen(seq_lens):
+def sym_gen(seq_len):
     enc_para = HyperPara(num_lstm_layer = _num_lstm_layer,
-                         seq_len        = seq_lens[0],
+                         seq_len        = seq_len,
                          input_size     = _input_size,
                          num_hidden     = _num_hidden,
                          num_embed      = _num_embed,
                          num_label      = None,
                          dropout        = _dropout)
     dec_para = HyperPara(num_lstm_layer = _num_lstm_layer,
-                         seq_len        = seq_lens[1],
+                         seq_len        = 30,
                          input_size     = None,
                          num_hidden     = _num_hidden,
                          num_embed      = None,
@@ -72,16 +71,16 @@ def sym_gen(seq_lens):
     return sym
 
 #data iter  
-input_dict = {'data': data}
+
 init_dict = get_input_shapes(enc_para, dec_para, _batch_size)
 
 if _auto_bucketing:
-    data_iter = BucketLabelIter(data, label, [], _batch_size, list(init_dict.items()))
+    data_iter = BucketDataIter(data, label, _batch_size, list(init_dict.items()))
     symbol = sym_gen
 else:
     data_iter = array_iter(data, label, _batch_size, list(init_dict.items()),
                            data_name='data', label_name='label', random=False)
-    symbol = sym_gen(30)
+    symbol = sym_gen(300)
                           
 #train
 def Perplexity(label, pred):
@@ -91,15 +90,12 @@ def Perplexity(label, pred):
         loss += -np.log(max(1e-10, pred[i][int(label[i])]))
     return np.exp(loss / label.size)
     
-# def Perplexity(label, pred):
-#     return np.exp(np.mean(pred))
-    
 opt = mx.optimizer.Adam(learning_rate=_learning_rate)
 
 if _use_pretrained:
     pre_trained = {'embed_weight': embed_weight}
     init = mx.initializer.Load(pre_trained,
-                            default_init=mx.initializer.Xavier(magnitude=2.34))
+                               default_init=mx.initializer.Xavier(magnitude=2.34))
 else:
     init = mx.initializer.Xavier(factor_type="in", magnitude=23.4)
     

@@ -239,6 +239,20 @@ def sep_data(data_filename, label_filename, seed=1234, val_ratio=0.15, test_rati
         np.save(data_name, data[idxs[i]])
         np.save(label_name, label[idxs[i]])
         
+def concat(data_filename, outname):
+    data = np.load(data_filename)
+    n, d = data.shape
+    new_data = np.zeros((n, d), dtype=np.int32)
+    data = np.fliplr(data)
+    for i in range(n):
+        sent = data[i]
+        mask = sent != 0
+        new_sent = sent[mask]
+        new_data[i, :len(new_sent)] = new_sent
+        new_data[i, len(new_sent)] = -1
+    np.save(outname, new_data)
+        
+        
 if __name__ == '__main__':
     # fin = open('sample_short_trans', 'r')
     # fout = open('sample_short_trans', 'w')
@@ -250,6 +264,7 @@ if __name__ == '__main__':
     # trans_idx2word(fin, fout)
     # add_sent_term(fin, fout)
     # trans2npy(fin)
-    sep_data('data.npy', 'label.npy')
+    # sep_data('data.npy', 'label.npy')
+    concat('data1000.npy', 'ndata1000.npy')
     # fin.close()
     # fout.close()
