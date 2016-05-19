@@ -5,10 +5,9 @@ import numpy as np
 from hier_lstm_pred import HyperPara, hier_lstm_model, get_input_shapes
 from copy import copy
 
-epoch = int(sys.argv[1])
-data_idx = int(sys.argv[2])  
 
-def predict(epoch, data_idx)         
+
+def predict(epoch, data_idx):         
     #model para
     _dict_len       = 55496
     _test           = False
@@ -86,7 +85,7 @@ def predict(epoch, data_idx)
     init_dict[data_name] = (_batch_size, sent_enc_para.seq_len * 3)
     init_dict[label_name] = (_batch_size, dec_para.seq_len)
 
-    model_exec = sym.simple_bind(ctx=mx.cpu(), **init_dict)
+    model_exec = sym.simple_bind(ctx=mx.gpu(), **init_dict)
 
     for key in model_exec.arg_dict.keys():
         if key in pretrained_model.arg_params:
@@ -99,7 +98,7 @@ def predict(epoch, data_idx)
     model_exec.forward()
     out = model_exec.outputs
     prob = model_exec.outputs[0].asnumpy()
-    return out[1].asnumpy()
+    
 
 
     # # import pdb; pdb.set_trace()
@@ -107,8 +106,13 @@ def predict(epoch, data_idx)
 
     # print(idxs)
     # print(label)
+    return out[1].asnumpy()
             
 if __name__ == '__main__':
+    epoch = int(sys.argv[1])
+    data_idx = int(sys.argv[2])  
+    # result = predict(epoch, data_idx)
     result = np.zeros((100, 512))
     for i in range(100):
         result[i] = predict(40, i)
+    import pdb; pdb.set_trace()
