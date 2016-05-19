@@ -32,13 +32,13 @@ _num_epoch      = 40
 #data
 
 if _test:
-    name = 'test'
+    data_path = os.path.join('data', 'ndata1000.npy')
+    label_path = os.path.join('data', 'label1000.npy')
 else:
     name = 'training'
-# data_path = os.path.join('data', name + '_data.npy')
-# label_path = os.path.join('data', name + '_label.npy')
-data_path = os.path.join('data', 'ndata1000.npy')
-label_path = os.path.join('data', 'label1000.npy')
+    data_path = os.path.join('data', name + '_data.npy')
+    label_path = os.path.join('data', name + '_label.npy')
+
 data = np.load(data_path)
 label = np.load(label_path)
 _nsamples = label.shape[0]
