@@ -127,6 +127,9 @@ model = mx.model.FeedForward(ctx         = _devs,
                              optimizer   = opt)
 print('Previous model load complete.')
 
+model.sym = None
+model.sym_gen = symbol
+
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
