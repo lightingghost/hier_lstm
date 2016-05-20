@@ -14,9 +14,9 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
 #model para
 _test           = False
 _auto_bucketing = True
-_use_pretrained = False
+_use_pretrained = True
 _dict_len       = 55496
-_num_lstm_layer = 3
+_num_lstm_layer = 2
 _input_size     = _dict_len + 3
 _num_hidden     = 512
 _num_embed      = 300
@@ -27,18 +27,18 @@ _learning_rate  = 0.008
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 20
-_num_epoch      = 40
+_num_epoch      = 1
 
 #data
 
 if _test:
-    name = 'test'
+    data_path = os.path.join('data', 'data1000.npy')
+    label_path = os.path.join('data', 'label1000.npy')
 else:
     name = 'training'
-# data_path = os.path.join('data', name + '_data.npy')
-# label_path = os.path.join('data', name + '_label.npy')
-data_path = os.path.join('data', 'data1000.npy')
-label_path = os.path.join('data', 'label1000.npy')
+    data_path = os.path.join('data', name + '_data.npy')
+    label_path = os.path.join('data', name + '_label.npy')
+
 data = np.load(data_path)
 label = np.load(label_path)
 _nsamples = label.shape[0]
@@ -131,5 +131,5 @@ checkpoint_path = os.path.join('checkpoint', 'auto_sum')
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 8),
+          batch_end_callback = mx.callback.Speedometer(_batch_size, 20),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
