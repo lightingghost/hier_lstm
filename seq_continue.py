@@ -119,7 +119,7 @@ opt = mx.optimizer.Adam(learning_rate=_learning_rate)
 
 
 model = mx.model.FeedForward(ctx         = _devs,
-                             symbol      = pretrained_model.symbol,
+                             symbol      = None
                              arg_params  = pretrained_model.arg_params,
                              aux_params  = pretrained_model.aux_params,
                              num_epoch   = _num_epoch,
@@ -133,5 +133,5 @@ model.sym_gen = symbol
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 8),
+          batch_end_callback = mx.callback.Speedometer(_batch_size, 20),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
