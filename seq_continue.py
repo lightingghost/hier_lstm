@@ -119,7 +119,7 @@ opt = mx.optimizer.Adam(learning_rate=_learning_rate)
 
 
 model = mx.model.FeedForward(ctx         = _devs,
-                             symbol      = None
+                             symbol      = symbol,
                              arg_params  = pretrained_model.arg_params,
                              aux_params  = pretrained_model.aux_params,
                              num_epoch   = _num_epoch,
