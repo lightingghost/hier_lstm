@@ -23,7 +23,7 @@ _num_embed      = 300
 _num_label      = _dict_len + 3
 _dropout        = 0.
 #opt para
-_learning_rate  = 0.001
+_learning_rate  = 0.002
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 20
