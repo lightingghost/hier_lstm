@@ -23,7 +23,7 @@ _num_embed      = 300
 _num_label      = _dict_len + 3
 _dropout        = 0.
 #opt para
-_learning_rate  = 0.008
+_learning_rate  = 0.001
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 20
@@ -126,9 +126,11 @@ model = mx.model.FeedForward(ctx         = _devs,
                              num_epoch   = _num_epoch,
                              optimizer   = opt,
                              initializer = init)
-checkpoint_path = os.path.join('checkpoint', 'auto_sum')
+checkpoint_path = os.path.join('checkpoint1', 'auto_sum')
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
           batch_end_callback = mx.callback.Speedometer(_batch_size, 8),
-          epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
+          epoch_end_callback = [mx.callback.do_checkpoint(checkpoint_path),
+                                mx.misc.FactorScheduler(1, 0.75)]
+          )
