@@ -109,10 +109,10 @@ def predict(epoch, data_idx):
     return out[1].asnumpy()
             
 if __name__ == '__main__':
-    epoch = int(sys.argv[1])
-    data_idx = int(sys.argv[2])  
-    result = predict(epoch, data_idx)
+    # epoch = int(sys.argv[1])
+    # data_idx = int(sys.argv[2])  
+    # result = predict(epoch, data_idx)
     result = np.zeros((20, 512))
     for i in range(20):
-        result[i] = predict(3, i)
+        result[i] = predict(6, i)
     import pdb; pdb.set_trace()

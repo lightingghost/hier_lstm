@@ -30,7 +30,7 @@ _learning_rate  = 0.0008
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 20
-_num_epoch      = begin_epoch + 1
+_num_epoch      = begin_epoch + 2
 
 #data
 
@@ -133,5 +133,5 @@ model.sym_gen = symbol
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 8),
+          batch_end_callback = mx.callback.Speedometer(_batch_size, 20),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
