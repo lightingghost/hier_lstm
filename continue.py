@@ -13,7 +13,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     level=logging.DEBUG, datefmt='%I:%M:%S')
 
 
-begin_epoch = 8
+begin_epoch = 9
 #model para
 _test           = False
 _auto_bucketing = True
@@ -30,7 +30,7 @@ _learning_rate  = 0.0002
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 20
-_num_epoch      = begin_epoch + 1
+_num_epoch      = begin_epoch + 2
 
 #data
 
