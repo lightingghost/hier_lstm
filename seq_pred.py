@@ -79,7 +79,7 @@ def predict(epoch, data_idx):
     init_dict[data_name] = (_batch_size, enc_para.seq_len)
     init_dict[label_name] = (_batch_size, dec_para.seq_len)
 
-    model_exec = sym.simple_bind(ctx=mx.gpu(), **init_dict)
+    model_exec = sym.simple_bind(ctx=mx.cpu(), **init_dict)
 
     for key in model_exec.arg_dict.keys():
         if key in pretrained_model.arg_params:
@@ -96,17 +96,17 @@ def predict(epoch, data_idx):
 
 
     # # import pdb; pdb.set_trace()
-    # idxs = np.argmax(prob, axis=1)
+    idxs = np.argmax(prob, axis=1)
 
-    # print(idxs)
-    # print(label)
+    print(idxs)
+    print(label)
     return out[0].asnumpy()
             
 if __name__ == '__main__':
-    # epoch = int(sys.argv[1])
-    # data_idx = int(sys.argv[2])  
-    # result = predict(epoch, data_idx)
-    result = np.zeros((20, 512))
-    for i in range(20):
-        result[i] = predict(5, i)
-    import pdb; pdb.set_trace()
+    epoch = int(sys.argv[1])
+    data_idx = int(sys.argv[2])  
+    result = predict(epoch, data_idx)
+    # result = np.zeros((20, 512))
+    # for i in range(20):
+    #     result[i] = predict(11, i)
+    # import pdb; pdb.set_trace()
