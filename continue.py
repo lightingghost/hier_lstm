@@ -13,7 +13,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     level=logging.DEBUG, datefmt='%I:%M:%S')
 
 
-begin_epoch = 13
+begin_epoch = 15
 #model para
 _test           = False
 _auto_bucketing = True
