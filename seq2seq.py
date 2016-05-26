@@ -97,6 +97,8 @@ else:
     data_iter = array_iter(data, label, _batch_size, list(init_dict.items()),
                            data_name='data', label_name='label', random=False)
     symbol = sym_gen(300)
+    
+import pdb; pdb.set_trace()
                           
 #train
 def Perplexity(label, pred):
@@ -113,7 +115,7 @@ if _use_pretrained:
     init = mx.initializer.Load(pre_trained,
                                default_init=mx.initializer.Xavier(magnitude=2.34))
 else:
-    init = mx.initializer.Xavier(factor_type="in", magnitude=23.4)
+    init = mx.initializer.Xavier(factor_type="in", magnitude=2.34)
     
 group2ctx = {'embed'      : mx.cpu(0),
              'preproc'    : mx.cpu(1),

@@ -37,7 +37,7 @@ def lstm(num_hidden, indata, prev_state, param, seqidx, layeridx, dropout=0.):
     return LSTMState(c=next_c, h=next_h)
     
 
-def lstm_encoder(indata, seq_len, num_lstm_layer, input_size, num_hidden, num_embed, dropout=0.):
+def lstm_encoder(data_wv, seq_len, num_lstm_layer, input_size, num_hidden, num_embed, dropout=0.):
     #multilayer lstm
     param_cells = []
     last_states = []
@@ -52,14 +52,10 @@ def lstm_encoder(indata, seq_len, num_lstm_layer, input_size, num_hidden, num_em
         last_states.append(state)
     assert(len(last_states) == num_lstm_layer)
     
-    with mx.AttrScope(ctx_group='embed'):
-        embed_weight = mx.sym.Variable("embed_weight")
-        embed = mx.sym.Embedding(data=indata, input_dim=input_size, weight=embed_weight, 
-                                 output_dim=num_embed, name='embed')
-        wordvec = mx.sym.SliceChannel(data=embed, num_outputs=seq_len, squeeze_axis=1)
+
         
     for seqidx in range(seq_len):
-        hidden = wordvec[seqidx]
+        hidden = data_wv[seqidx]
         # stack LSTM
         for i in range(num_lstm_layer):
             if i == 0:
@@ -79,7 +75,7 @@ def lstm_encoder(indata, seq_len, num_lstm_layer, input_size, num_hidden, num_em
 
     return last_states
 
-def lstm_decoder(in_lstm_state, num_lstm_layer, seq_len, num_hidden, num_label, dropout=0.):
+def lstm_decoder(label_wv, in_lstm_state, num_lstm_layer, seq_len, num_hidden, num_label, dropout=0.):
     # pass the state             
 
     with mx.AttrScope(ctx_group='decode'):
@@ -108,7 +104,7 @@ def lstm_decoder(in_lstm_state, num_lstm_layer, seq_len, num_hidden, num_label, 
                                   prev_state=last_states[i],
                                   param=param_cells[i],
                                   seqidx=seqidx, layeridx=i, dropout=dp_ratio)
-                hidden = next_state.h
+                hidden = label_wv[seqidx]
                 last_states[i] = next_state
         # decoder
         if dropout > 0.:
@@ -131,9 +127,18 @@ def seq_softmax(label, pred):
 def lstm_model(data_name, label_name, enc_para, dec_para):
     data = mx.sym.Variable(data_name)
     label = mx.sym.Variable(label_name)
-    enc_state = lstm_encoder(data, enc_para.seq_len, enc_para.num_lstm_layer, enc_para.input_size,
+    with mx.AttrScope(ctx_group='embed'):
+        embed_weight = mx.sym.Variable("embed_weight")
+    data_embed = mx.sym.Embedding(data=data, input_dim=enc_para.input_size, weight=embed_weight, 
+                                 output_dim=enc_para.num_embed)
+    data_wv = mx.sym.SliceChannel(data=data_embed, num_outputs=enc_para.seq_len, squeeze_axis=1)
+        
+    label_embed = mx.sym.Embedding(data=label, input_dim=enc_para.input_size, weight=embed_weight, 
+                                 output_dim=enc_para.num_embed)
+    label_wv = mx.sym.SliceChannel(data=label_embed, num_outputs=dec_para.seq_len, squeeze_axis=1)        
+    enc_state = lstm_encoder(data_wv, enc_para.seq_len, enc_para.num_lstm_layer, enc_para.input_size,
                              enc_para.num_hidden, enc_para.num_embed, enc_para.dropout)
-    pred = lstm_decoder(enc_state, dec_para.num_lstm_layer, dec_para.seq_len,
+    pred = lstm_decoder(label_wv, enc_state, dec_para.num_lstm_layer, dec_para.seq_len,
                         dec_para.num_hidden, dec_para.num_label, dec_para.dropout)
     loss = seq_softmax(label, pred)
     return loss
