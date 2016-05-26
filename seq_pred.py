@@ -4,8 +4,10 @@ import sys
 import numpy as np
 from normal_lstm import HyperPara, lstm_model, get_input_shapes
 from copy import copy
+import json
 
-
+file = open('data/idx2word', 'r')
+idx2word = json.load(file)
 
 def predict(epoch, data_idx):         
     #model para
@@ -68,7 +70,7 @@ def predict(epoch, data_idx):
 
 
     
-    checkpoint_path = os.path.join('..', 'checkpoint', 'auto_sum')
+    checkpoint_path = os.path.join('checkpoint1', 'auto_sum')
     pretrained_model = mx.model.FeedForward.load(checkpoint_path, epoch)
 
     print('Previous model load complete.')
@@ -95,18 +97,21 @@ def predict(epoch, data_idx):
     
 
 
-    # # import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     idxs = np.argmax(prob, axis=1)
 
-    print(idxs)
-    print(label)
-    return out[0].asnumpy()
+    pre = [idx2word[str(i)] for i in idxs if str(i) in idx2word]
+    orig = [idx2word[str(i)] for i in label[0] if str(i) in idx2word]
+    # import pdb; pdb.set_trace()
+    print(pre)
+    print(orig)
+    #return out[0].asnumpy()
             
 if __name__ == '__main__':
-    epoch = int(sys.argv[1])
-    data_idx = int(sys.argv[2])  
-    result = predict(epoch, data_idx)
-    # result = np.zeros((20, 512))
-    # for i in range(20):
-    #     result[i] = predict(11, i)
-    # import pdb; pdb.set_trace()
+    # epoch = int(sys.argv[1])
+    # data_idx = int(sys.argv[2])  
+    # result = predict(epoch, data_idx)
+    result = np.zeros((20, 512))
+    for i in range(20):
+        result[i] = predict(40, i)
+    import pdb; pdb.set_trace()

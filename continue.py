@@ -7,13 +7,15 @@ from data_io import array_iter_with_init_states as array_iter
 from bucket_io import BucketLabelIter
 #setup logging
 from imp import reload
+from fan_speed import set_fan_speed
 import logging
 reload(logging)
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', 
                     level=logging.DEBUG, datefmt='%I:%M:%S')
+set_fan_speed(40)
 
 
-begin_epoch = 15
+begin_epoch = 19
 #model para
 _test           = False
 _auto_bucketing = True
@@ -135,3 +137,5 @@ model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
           batch_end_callback = mx.callback.Speedometer(_batch_size, 20),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path))
+
+set_fan_speed(20)

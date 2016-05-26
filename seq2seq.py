@@ -12,7 +12,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     level=logging.DEBUG, datefmt='%I:%M:%S')
 
 #model para
-_test           = False
+_test           = True
 _auto_bucketing = True
 _use_pretrained = True
 _dict_len       = 55496
@@ -131,6 +131,5 @@ checkpoint_path = os.path.join('checkpoint1', 'auto_sum')
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
           batch_end_callback = mx.callback.Speedometer(_batch_size, 8),
-          epoch_end_callback = [mx.callback.do_checkpoint(checkpoint_path),
-                                mx.misc.FactorScheduler(1, 0.75)]
+          epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path)
           )
