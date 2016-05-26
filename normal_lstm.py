@@ -37,7 +37,7 @@ def lstm(num_hidden, indata, prev_state, param, seqidx, layeridx, dropout=0.):
     return LSTMState(c=next_c, h=next_h)
     
 
-def lstm_encoder(indata, seq_len, num_lstm_layer, input_size, num_hidden, num_embed, dropout=0.):
+def lstm_encoder(data_wv, seq_len, num_lstm_layer, input_size, num_hidden, num_embed, dropout=0.):
     #multilayer lstm
     param_cells = []
     last_states = []
@@ -51,15 +51,9 @@ def lstm_encoder(indata, seq_len, num_lstm_layer, input_size, num_hidden, num_em
                               h=mx.sym.Variable("enc_l%d_init_h" % i))
         last_states.append(state)
     assert(len(last_states) == num_lstm_layer)
-    
-    with mx.AttrScope(ctx_group='embed'):
-        embed_weight = mx.sym.Variable("embed_weight")
-        embed = mx.sym.Embedding(data=indata, input_dim=input_size, weight=embed_weight, 
-                                 output_dim=num_embed, name='embed')
-        wordvec = mx.sym.SliceChannel(data=embed, num_outputs=seq_len, squeeze_axis=1)
         
     for seqidx in range(seq_len):
-        hidden = wordvec[seqidx]
+        hidden = data_wv[seqidx]
         # stack LSTM
         for i in range(num_lstm_layer):
             if i == 0:
@@ -79,7 +73,7 @@ def lstm_encoder(indata, seq_len, num_lstm_layer, input_size, num_hidden, num_em
 
     return last_states
 
-def lstm_decoder(in_lstm_state, num_lstm_layer, seq_len, num_hidden, num_label, dropout=0.):
+def lstm_decoder(label_wv, in_lstm_state, num_lstm_layer, seq_len, num_hidden, num_label, dropout=0.):
     # pass the state             
 
     with mx.AttrScope(ctx_group='decode'):
@@ -110,10 +104,16 @@ def lstm_decoder(in_lstm_state, num_lstm_layer, seq_len, num_hidden, num_label, 
                                   seqidx=seqidx, layeridx=i, dropout=dp_ratio)
                 hidden = next_state.h
                 last_states[i] = next_state
+        
         # decoder
         if dropout > 0.:
             hidden = mx.sym.Dropout(data=hidden, p=dropout)
         hidden_all.append(hidden)
+        if seqidx == seq_len - 2:
+            hidden = label_wv[seqidx] + label_wv[seqidx + 1]
+        else:
+            hidden = label_wv[seqidx]
+        
     with mx.AttrScope(ctx_group='decode'):                  
         hidden_concat = mx.sym.Concat(*hidden_all, dim=0)
         pred = mx.sym.FullyConnected(data=hidden_concat, num_hidden=num_label,
@@ -131,9 +131,21 @@ def seq_softmax(label, pred):
 def lstm_model(data_name, label_name, enc_para, dec_para):
     data = mx.sym.Variable(data_name)
     label = mx.sym.Variable(label_name)
-    enc_state = lstm_encoder(data, enc_para.seq_len, enc_para.num_lstm_layer, enc_para.input_size,
+    
+    with mx.AttrScope(ctx_group='embed'):
+        embed_weight = mx.sym.Variable("embed_weight")
+        # data
+        data_embed = mx.sym.Embedding(data=data, input_dim=enc_para.input_size, weight=embed_weight, 
+                                 output_dim=enc_para.num_embed, name='embed')
+        data_wv = mx.sym.SliceChannel(data=data_embed, num_outputs=enc_para.seq_len, squeeze_axis=1)
+        # label
+        label_embed = mx.sym.Embedding(data=label, input_dim=enc_para.input_size, weight=embed_weight, 
+                                 output_dim=enc_para.num_embed, name='embed')
+        label_wv = mx.sym.SliceChannel(data=label_embed, num_outputs=dec_para.seq_len, squeeze_axis=1)
+    
+    enc_state = lstm_encoder(data_wv, enc_para.seq_len, enc_para.num_lstm_layer, enc_para.input_size,
                              enc_para.num_hidden, enc_para.num_embed, enc_para.dropout)
-    pred = lstm_decoder(enc_state, dec_para.num_lstm_layer, dec_para.seq_len,
+    pred = lstm_decoder(label_wv, enc_state, dec_para.num_lstm_layer, dec_para.seq_len,
                         dec_para.num_hidden, dec_para.num_label, dec_para.dropout)
     loss = seq_softmax(label, pred)
     return loss
@@ -143,5 +155,5 @@ def get_input_shapes(enc_para, dec_para, batch_size):
     for i in range(enc_para.num_lstm_layer):
         init_state_shapes['enc_l{}_init_h'.format(i)] = (batch_size, enc_para.num_hidden)
         init_state_shapes['enc_l{}_init_c'.format(i)] = (batch_size, enc_para.num_hidden) 
-    init_state_shapes['dec_start'] = (batch_size, dec_para.num_hidden)   
+    init_state_shapes['dec_start'] = (batch_size, enc_para.num_embed)   
     return init_state_shapes

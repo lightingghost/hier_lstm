@@ -113,5 +113,5 @@ if __name__ == '__main__':
     # result = predict(epoch, data_idx)
     result = np.zeros((20, 512))
     for i in range(20):
-        result[i] = predict(40, i)
+        result[i] = predict(100, i)
     import pdb; pdb.set_trace()

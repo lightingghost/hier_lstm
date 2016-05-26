@@ -9,5 +9,6 @@ data/data/*
 data/glove/*
 checkpoint*/*
 .idea
+data/*/*
 __pycache__
 
