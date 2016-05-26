@@ -13,7 +13,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     
 begin_epoch     = 74
 #model para
-_test           = True
+_test           = False
 _auto_bucketing = True
 _use_pretrained = True
 _dict_len       = 55496
@@ -37,8 +37,8 @@ if _test:
     label_path = os.path.join('data', 'label1000.npy')
 else:
     name = 'training'
-    data_path = os.path.join('data', name + '_data.npy')
-    label_path = os.path.join('data', name + '_label.npy')
+    data_path = os.path.join('data', 'normal_lstm', name + '_data.npy')
+    label_path = os.path.join('data', 'normal_lstm', name + '_label.npy')
 
 data = np.load(data_path)
 label = np.load(label_path)
@@ -101,7 +101,7 @@ else:
 
 
 
-checkpoint_path = os.path.join('checkpoint1', 'auto_sum')
+checkpoint_path = os.path.join('checkpoint0', 'auto_sum')
 pretrained_model = mx.model.FeedForward.load(checkpoint_path, begin_epoch)
 
 

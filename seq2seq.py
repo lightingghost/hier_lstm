@@ -12,7 +12,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',
                     level=logging.DEBUG, datefmt='%I:%M:%S')
 
 #model para
-_test           = True
+_test           = False
 _auto_bucketing = True
 _use_pretrained = True
 _dict_len       = 55496
@@ -35,9 +35,9 @@ if _test:
     data_path = os.path.join('data', 'ndata1000.npy')
     label_path = os.path.join('data', 'label1000.npy')
 else:
-    name = 'training'
-    data_path = os.path.join('data', name + '_data.npy')
-    label_path = os.path.join('data', name + '_label.npy')
+    name = 'val'
+    data_path = os.path.join('data', 'normal_lstm', name + '_data.npy')
+    label_path = os.path.join('data', 'normal_lstm', name + '_label.npy')
 
 data = np.load(data_path)
 label = np.load(label_path)
@@ -126,10 +126,10 @@ model = mx.model.FeedForward(ctx         = _devs,
                              num_epoch   = _num_epoch,
                              optimizer   = opt,
                              initializer = init)
-checkpoint_path = os.path.join('checkpoint1', 'auto_sum')
+checkpoint_path = os.path.join('checkpoint0', 'auto_sum')
 
 model.fit(X                  = data_iter,
           eval_metric        = mx.metric.np(Perplexity),
-          batch_end_callback = mx.callback.Speedometer(_batch_size, 8),
+          batch_end_callback = mx.callback.Speedometer(_batch_size, 20),
           epoch_end_callback = mx.callback.do_checkpoint(checkpoint_path)
           )
