@@ -129,13 +129,13 @@ def lstm_model(data_name, label_name, enc_para, dec_para):
     label = mx.sym.Variable(label_name)
     with mx.AttrScope(ctx_group='embed'):
         embed_weight = mx.sym.Variable("embed_weight")
-    data_embed = mx.sym.Embedding(data=data, input_dim=enc_para.input_size, weight=embed_weight, 
-                                 output_dim=enc_para.num_embed)
-    data_wv = mx.sym.SliceChannel(data=data_embed, num_outputs=enc_para.seq_len, squeeze_axis=1)
-        
-    label_embed = mx.sym.Embedding(data=label, input_dim=enc_para.input_size, weight=embed_weight, 
-                                 output_dim=enc_para.num_embed)
-    label_wv = mx.sym.SliceChannel(data=label_embed, num_outputs=dec_para.seq_len, squeeze_axis=1)        
+        data_embed = mx.sym.Embedding(data=data, input_dim=enc_para.input_size, weight=embed_weight, 
+                                        output_dim=enc_para.num_embed)
+        data_wv = mx.sym.SliceChannel(data=data_embed, num_outputs=enc_para.seq_len, squeeze_axis=1)
+            
+        label_embed = mx.sym.Embedding(data=label, input_dim=enc_para.input_size, weight=embed_weight, 
+                                        output_dim=enc_para.num_embed)
+        label_wv = mx.sym.SliceChannel(data=label_embed, num_outputs=dec_para.seq_len, squeeze_axis=1)        
     enc_state = lstm_encoder(data_wv, enc_para.seq_len, enc_para.num_lstm_layer, enc_para.input_size,
                              enc_para.num_hidden, enc_para.num_embed, enc_para.dropout)
     pred = lstm_decoder(label_wv, enc_state, dec_para.num_lstm_layer, dec_para.seq_len,
