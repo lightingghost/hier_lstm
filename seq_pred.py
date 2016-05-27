@@ -58,11 +58,11 @@ def predict(epoch):
     #data
     data_name = 'data'
     label_name = 'label'
-    name = 'training'
-    # data_path = os.path.join('data', name + '_data.npy')
-    # label_path = os.path.join('data', name + '_label.npy')
-    data_path = os.path.join('data', 'nndata1000.npy')
-    label_path = os.path.join('data', 'label1000.npy')
+    name = 'val'
+    data_path = os.path.join('data', 'normal_lstm', name + '_data.npy')
+    label_path = os.path.join('data', 'normal_lstm', name + '_label.npy')
+    # data_path = os.path.join('data', 'nndata1000.npy')
+    # label_path = os.path.join('data', 'label1000.npy')
     data = np.load(data_path)
     label = np.load(label_path)
     _nsamples = label.shape[0]
@@ -99,8 +99,11 @@ def predict(epoch):
     
     print('Previous model load complete.')
     
-
+    data_lens = np.argwhere(data == -1)[:, 1]
+    for i in range(self.nsamples):
+        data[i, data_lens[i]] = 0
     
+
     for i in range(20):
         t_data = data[i, :].reshape((1, 300))
         t_label = label[i, :].reshape((1, 30))
@@ -109,4 +112,4 @@ def predict(epoch):
         print([idx2word[str(i)] for i in t_label[0] if str(i) in idx2word])
             
 if __name__ == '__main__':
-    predict(10)
+    predict(18)
