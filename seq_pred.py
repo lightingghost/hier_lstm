@@ -6,10 +6,38 @@ from normal_lstm import HyperPara, lstm_model, get_input_shapes
 from copy import copy
 import json
 
-file = open('data/idx2word', 'r')
-idx2word = json.load(file)
 
-def predict(epoch, data_idx):         
+
+class Model:
+    def __init__(self, symbol, init_paras, pretrained, idx2word, ctx=mx.cpu()):
+        self.idx2word = idx2word
+        state_dict = copy(init_paras)
+
+        init_paras['data'] = (1, 300)
+        init_paras['label'] = (1, 30)
+
+        self.model_exec = symbol.simple_bind(ctx=mx.cpu(), **init_paras)
+
+        for key in self.model_exec.arg_dict.keys():
+            if key in pretrained.arg_params:
+                pretrained.arg_params[key].copyto(self.model_exec.arg_dict[key])
+        for name, shape in state_dict.items():
+            mx.nd.zeros(shape).copyto(self.model_exec.arg_dict[name])
+
+    def predict(self, data, label):
+        mx.nd.array(data).copyto(self.model_exec.arg_dict['data'])
+        mx.nd.array(label).copyto(self.model_exec.arg_dict['label'])
+        self.model_exec.forward()
+        
+        prob = self.model_exec.outputs[0].asnumpy()
+        idxs = np.argmax(prob, axis=1)
+        
+        import pdb; pdb.set_trace()
+        pred = [self.idx2word[str(i)] for i in idxs if str(i) in self.idx2word]
+        
+        return pred
+
+def predict(epoch):         
     #model para
     _dict_len       = 55496
     _test           = False
@@ -60,58 +88,23 @@ def predict(epoch, data_idx):
     init_dict = get_input_shapes(enc_para, dec_para, _batch_size)
     sym = lstm_model(data_name, label_name, enc_para, dec_para)
 
-    
-    data = data[data_idx, :].reshape((1, 300))
-    label = label[data_idx, :].reshape((1, 30))
-
-
-
-    print('Data loading complete.')
-
-
-    
-    checkpoint_path = os.path.join('checkpoint1', 'auto_sum')
+    checkpoint_path = os.path.join('checkpoint0', 'auto_sum')
     pretrained_model = mx.model.FeedForward.load(checkpoint_path, epoch)
-
+    
+    file = open('data/idx2word', 'r')
+    idx2word = json.load(file)
+    file.close()
+    
+    pre_model = Model(sym, init_dict, pretrained_model, idx2word)
+    
     print('Previous model load complete.')
-
-
-    state_dict = copy(init_dict)
-
-    init_dict[data_name] = (_batch_size, enc_para.seq_len)
-    init_dict[label_name] = (_batch_size, dec_para.seq_len)
-
-    model_exec = sym.simple_bind(ctx=mx.cpu(), **init_dict)
-
-    for key in model_exec.arg_dict.keys():
-        if key in pretrained_model.arg_params:
-            pretrained_model.arg_params[key].copyto(model_exec.arg_dict[key])
-    for name, shape in state_dict.items():
-        mx.nd.zeros(shape).copyto(model_exec.arg_dict[name])
-
-    mx.nd.array(data).copyto(model_exec.arg_dict[data_name])
-    mx.nd.array(label).copyto(model_exec.arg_dict[label_name])
-    model_exec.forward()
-    out = model_exec.outputs
-    prob = model_exec.outputs[0].asnumpy()
     
 
-
-    # import pdb; pdb.set_trace()
-    idxs = np.argmax(prob, axis=1)
-
-    pre = [idx2word[str(i)] for i in idxs if str(i) in idx2word]
-    orig = [idx2word[str(i)] for i in label[0] if str(i) in idx2word]
-    # import pdb; pdb.set_trace()
-    print(pre)
-    print(orig)
-    #return out[0].asnumpy()
+    
+    for i in range(20):
+        t_data = data[i, :].reshape((1, 300))
+        t_label = label[i, :].reshape((1, 30))
+        print(pre_model.predict(t_data, t_label))
             
 if __name__ == '__main__':
-    # epoch = int(sys.argv[1])
-    # data_idx = int(sys.argv[2])  
-    # result = predict(epoch, data_idx)
-    result = np.zeros((20, 512))
-    for i in range(20):
-        result[i] = predict(100, i)
-    import pdb; pdb.set_trace()
+    predict(4)

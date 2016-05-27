@@ -11,7 +11,7 @@ reload(logging)
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', 
                     level=logging.DEBUG, datefmt='%I:%M:%S')
                     
-begin_epoch     = 74
+begin_epoch     = 6
 #model para
 _test           = False
 _auto_bucketing = True
@@ -24,7 +24,7 @@ _num_embed      = 300
 _num_label      = _dict_len + 3
 _dropout        = 0.
 #opt para
-_learning_rate  = 0.0005
+_learning_rate  = 0.001
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 20
@@ -36,7 +36,7 @@ if _test:
     data_path = os.path.join('data', 'ndata1000.npy')
     label_path = os.path.join('data', 'label1000.npy')
 else:
-    name = 'training'
+    name = 'val'
     data_path = os.path.join('data', 'normal_lstm', name + '_data.npy')
     label_path = os.path.join('data', 'normal_lstm', name + '_label.npy')
 
