@@ -32,7 +32,7 @@ class Model:
         prob = self.model_exec.outputs[0].asnumpy()
         idxs = np.argmax(prob, axis=1)
         
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         pred = [self.idx2word[str(i)] for i in idxs if str(i) in self.idx2word]
         
         return pred
@@ -104,7 +104,9 @@ def predict(epoch):
     for i in range(20):
         t_data = data[i, :].reshape((1, 300))
         t_label = label[i, :].reshape((1, 30))
+        print(i)
         print(pre_model.predict(t_data, t_label))
+        print([idx2word[str(i)] for i in t_label[0] if str(i) in idx2word])
             
 if __name__ == '__main__':
-    predict(4)
+    predict(10)
