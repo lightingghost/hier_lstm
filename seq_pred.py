@@ -43,7 +43,7 @@ class Model:
 def predict(epoch):         
     #model para
     _dict_len       = 55496
-    _test           = False
+    _test           = True
     _num_lstm_layer = 3
     _input_size     = _dict_len + 3
     _num_hidden     = 512

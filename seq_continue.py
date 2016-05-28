@@ -11,7 +11,7 @@ reload(logging)
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', 
                     level=logging.DEBUG, datefmt='%I:%M:%S')
                     
-begin_epoch     = 25
+begin_epoch     = 1
 #model para
 _test           = False
 _auto_bucketing = True
@@ -24,11 +24,11 @@ _num_embed      = 300
 _num_label      = _dict_len + 3
 _dropout        = 0.
 #opt para
-_learning_rate  = 0.0006
+_learning_rate  = 0.004
 #training para
 _devs           = [mx.gpu()]
 _batch_size     = 20
-_num_epoch      = begin_epoch + 5
+_num_epoch      = begin_epoch + 2
 
 #data
 
@@ -36,7 +36,7 @@ if _test:
     data_path = os.path.join('data', 'ndata1000.npy')
     label_path = os.path.join('data', 'label1000.npy')
 else:
-    name = 'val'
+    name = 'training'
     data_path = os.path.join('data', 'normal_lstm', name + '_data.npy')
     label_path = os.path.join('data', 'normal_lstm', name + '_label.npy')
 
@@ -101,7 +101,7 @@ else:
 
 
 
-checkpoint_path = os.path.join('checkpoint0', 'auto_sum')
+checkpoint_path = os.path.join('checkpoint', 'auto_sum')
 pretrained_model = mx.model.FeedForward.load(checkpoint_path, begin_epoch)
 
 
