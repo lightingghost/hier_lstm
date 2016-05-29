@@ -11,8 +11,8 @@ reload(logging)
 logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', 
                     level=logging.DEBUG, datefmt='%I:%M:%S')
                     
-begin_epoch     = 3
-#model para
+begin_epoch     = 7
+# model para
 _test           = False
 _auto_bucketing = True
 _use_pretrained = True
