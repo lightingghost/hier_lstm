@@ -148,7 +148,8 @@ def lstm_model(data_name, label_name, enc_para, dec_para):
     pred = lstm_decoder(label_wv, enc_state, dec_para.num_lstm_layer, dec_para.seq_len,
                         dec_para.num_hidden, dec_para.num_label, dec_para.dropout)
     loss = seq_softmax(label, pred)
-    return loss
+    enc = [enc_state[i].h for i in range(enc_para.num_lstm_layer)]
+    return mx.sym.Group([loss] + enc)
     
 def get_input_shapes(enc_para, dec_para, batch_size):
     init_state_shapes = {}

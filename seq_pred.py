@@ -7,9 +7,13 @@ from copy import copy
 import json
 
 
+file = open('data/idx2word', 'r')
+idx2word = json.load(file)
+file.close()
+
 
 class Model:
-    def __init__(self, sym_gen, init_paras, pretrained, idx2word, ctx=mx.cpu()):
+    def __init__(self, sym_gen, init_paras, pretrained, idx2word, ctx=mx.gpu()):
         self.idx2word = idx2word
         self.state_dict = copy(init_paras)
         self.sym_gen = sym_gen
@@ -35,10 +39,24 @@ class Model:
         prob = self.model_exec.outputs[0].asnumpy()
         idxs = np.argmax(prob, axis=1)
         
-        # import pdb; pdb.set_trace()
+        doc_vec = np.hstack([self.model_exec.outputs[i+1].asnumpy() for i in range(3)])
+        
         pred = [self.idx2word[str(i)] for i in idxs if str(i) in self.idx2word]
         
-        return pred
+        return idxs, doc_vec
+
+def translate(seq, dict=idx2word):
+    result = []
+    for idx in seq:
+        if idx == 1:
+            continue
+        elif idx == 2:
+            result.append('<unk>')
+        elif idx == 0:
+            break
+        else:
+            result.append(dict[str(idx)])
+    return ' '.join(result)
 
 def predict(epoch):         
     #model para
@@ -127,14 +145,26 @@ def predict(epoch):
     data_lens = np.argwhere(data == -1)[:, 1]
     # for i in range(_nsamples):
     #     data[i, data_lens[i]] = 0
+    doc_vecs = []
     
+    idxs = np.random.permutation(_nsamples)
 
-    for i in range(20):
+    for i in range(_nsamples):
+        if data_lens[i] <= 3:
+            continue
         t_data = data[i, :data_lens[i]].reshape((1, data_lens[i]))
         t_label = label[i, :].reshape((1, 30))
         print(i)
-        print(pre_model.predict(t_data, t_label, data_lens[i]))
-        print([idx2word[str(i)] for i in t_label[0] if str(i) in idx2word])
-            
+        pred, doc_vec = pre_model.predict(t_data, t_label, data_lens[i])
+        print(translate(t_data[0]))
+        print('----')
+        print(translate(pred))
+        print('----')
+        print(translate(t_label[0]))
+        doc_vecs.append(doc_vec)
+        
+    return np.vstack(doc_vecs)
+               
 if __name__ == '__main__':
-    predict(25)
+    doc_vecs = predict(30)
+    np.save('doc_vecs_ils.npy', doc_vecs)
